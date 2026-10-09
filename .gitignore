@@ -16,3 +16,21 @@ review-*.md
 # Session memory written by the assistant tooling. Local, and none of a
 # public repository's business.
 .memsearch/
+
+# AI assistant artefacts: instructions and settings for whoever works on this
+# checkout with an assistant. Local, like in every repository of this author.
+CLAUDE.md
+AGENTS.md
+.claude/
+.codex/
+.cursor/
+.gemini/
+.ai-context/
+.opencode/
+
+# Work notes about this repository — traps met while editing it, and the state
+# of the work outside git. Written for whoever maintains a checkout, machine by
+# machine, and not part of what the skill ships.
+kb/
+finding-*.txt
+finding-*.md

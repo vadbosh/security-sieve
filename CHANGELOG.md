@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 — 2026-10-09
+
+- **`AGENTS.md`, `CLAUDE.md` and `kb/` are no longer in the repository.** They
+  are instructions and notes for whoever works on a checkout with an
+  assistant, not part of what the skill ships, and 1.0.0 committed the first
+  two by mistake. `.gitignore` now keeps assistant artefacts and work notes
+  out, as in the author's other repositories.
+
 ## 1.0.0 — 2026-10-09
 
 First release as its own repository. Starts from `security-review` of
