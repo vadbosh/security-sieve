@@ -232,7 +232,7 @@ expr.setVariable("name", userName);
 # SQL Injection
 grep -rn "execute.*+" --include="*.py"
 grep -rn "raw_sql\|rawQuery\|raw(" --include="*.py" --include="*.js"
-grep -rn "\\.query\\(.*\\+" --include="*.js"
+grep -rn '\.query(.*+' --include="*.js"
 grep -rn "\\$.*\\+" --include="*.php"
 
 # Command Injection

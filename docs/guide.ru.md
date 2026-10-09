@@ -176,9 +176,11 @@ scanners (no bash shell)».
 
 Скилл начинался как `security-review` из
 [getsentry/skills](https://github.com/getsentry/skills) (Apache-2.0).
-Справочные материалы скопированы оттуда без изменений: 17 файлов в
+Справочные материалы скопированы оттуда: 17 файлов в
 `references/`, `languages/python.md`, `languages/javascript.md`,
-`infrastructure/docker.md`. Sentry написала их на основе
+`infrastructure/docker.md`. Отличается одна строка: шаблон grep в
+`references/injection.md`, который GNU grep не принимал, — исправлен и записан
+в `NOTICE`. Sentry написала их на основе
 [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/), поэтому они
 остаются под CC BY-SA 4.0. Их можно распространять и переделывать с указанием
 авторства, а переделанная версия остаётся под той же лицензией.

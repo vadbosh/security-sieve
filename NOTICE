@@ -12,6 +12,11 @@ getsentry/skills — skills/security-review
   variant analysis, exclusion rules and new guides were added, and the
   output format was extended. The verbatim copies are listed in UPSTREAM.
 
+  One copy was changed, 2026-10-09: references/injection.md line 235. Its
+  pattern `grep -rn "\\.query\\(.*\\+"` fails in GNU grep ("Unmatched ( or \("),
+  because \( opens a group in a basic regular expression; it now reads
+  `grep -rn '\.query(.*+'`.
+
 OWASP Cheat Sheet Series
   https://cheatsheetseries.owasp.org/
   OWASP Foundation, licensed under CC BY-SA 4.0.

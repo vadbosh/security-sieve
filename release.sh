@@ -145,7 +145,7 @@ licenses() {
 # The CC BY-SA copies are kept byte for byte so that "derived from" stays
 # true and an upstream update is a plain copy. A changed copy must be recorded.
 upstream_copies() {
-    local bad n sum f
+    local bad n sum f changed
     if ! sha256 "$SKILL" >/dev/null; then
         echo "  upstream copies:  cannot check — neither sha256sum nor shasum is installed"
         return 1
@@ -159,7 +159,8 @@ upstream_copies() {
         echo "$bad" | sed 's/^/    /'
         return 1
     fi
-    echo "  upstream copies:  $n, unchanged since $(awk '$1=="commit"{print $2}' "$UPSTREAM")"
+    changed="$(grep -c '^# changed' "$UPSTREAM")"
+    echo "  upstream copies:  $n match UPSTREAM, pinned at $(awk '$1=="commit"{print $2}' "$UPSTREAM")$([ "$changed" -gt 0 ] && echo "; $changed changed on purpose, see NOTICE")"
 }
 
 # A machine path inside a shipped file reaches every clone. The upstream

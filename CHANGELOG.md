@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **`references/injection.md` line 235 works in GNU grep.** The upstream pattern
+  `"\\.query\\(.*\\+"` failed with "Unmatched ( or \(": in a basic regular
+  expression `\(` opens a group. It now reads `'\.query(.*+'`. The file is a
+  CC BY-SA copy, so the change is recorded in `NOTICE` and its checksum in
+  `UPSTREAM` is updated. The other grep lines of the copied guides were run on
+  fixtures; none else fails.
+
 ## 1.1.0 — 2026-10-09
 
 - **A C# / ASP.NET Core guide**, `languages/csharp.md`: object-level

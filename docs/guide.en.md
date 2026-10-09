@@ -172,9 +172,10 @@ available.
 
 The skill started as `security-review` from
 [getsentry/skills](https://github.com/getsentry/skills) (Apache-2.0). Its
-reference material is copied unchanged: 17 files in `references/`,
+reference material is copied from it: 17 files in `references/`,
 `languages/python.md`, `languages/javascript.md`, `infrastructure/docker.md`.
-Sentry derived that material from the
+One line differs: a grep pattern in `references/injection.md` that GNU grep
+rejected, fixed and recorded in `NOTICE`. Sentry derived that material from the
 [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/), so it stays
 under CC BY-SA 4.0. You may share
 and adapt those files with credit; an adaptation keeps the same license.

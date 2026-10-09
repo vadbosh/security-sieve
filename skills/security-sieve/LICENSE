@@ -13,9 +13,11 @@ https://creativecommons.org/licenses/by-sa/4.0/
   These files are copied unchanged from skills/security-review of
   getsentry/skills. Their content is derived from the OWASP Cheat Sheet
   Series (https://cheatsheetseries.owasp.org/), OWASP Foundation
-  (https://owasp.org/). The changes getsentry made, if any, are theirs;
-  security-sieve makes none — the repository's UPSTREAM file pins the
-  commit they were copied from and their checksums.
+  (https://owasp.org/). The changes getsentry made, if any, are theirs.
+  security-sieve changes one line of references/injection.md (a broken
+  grep pattern, recorded in NOTICE); the rest are unchanged. The
+  repository's UPSTREAM file pins the commit they were copied from and
+  their checksums.
 
   Under CC BY-SA 4.0 you may share and adapt these files for any purpose,
   provided you give appropriate credit, link to the license, indicate any
