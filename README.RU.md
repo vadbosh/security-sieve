@@ -7,8 +7,8 @@
 заново, по отдельности, и пытается доказать, что это не уязвимость. В отчёт
 попадают только те уязвимости, которые получили не меньше 8 баллов из 10.
 
-Проверено на Linux, в образе `bash:3.2` и с PowerShell 7; на macOS и в Windows
-PowerShell 5.1 не проверялось.
+Развёртывание проверено на Linux, macOS и Windows — в образе `bash:3.2` и с
+PowerShell 7; на реальных macOS и в Windows PowerShell 5.1 не проверялось.
 
 [English version](README.md) · [Как это устроено](docs/guide.ru.md)
 
