@@ -50,6 +50,28 @@ Secrets, environment variables or a vault.
 
 CWE-639, CWE-284 | OWASP A01:2025 Broken Access Control
 
+The authorisation inventory of Step 4, for ASP.NET Core controllers: one line
+per action — its route, whether it takes an id, and how many tenant checks its
+body contains. Put the name of the project's own check in `TENANT`; an action
+with an id and `tenant=0` is a candidate, to be confirmed in the manager it
+calls.
+
+```bash
+TENANT='CheckCmrOnOrganization|organizationId[(]User[)]|OrganizationId ==|HasAccess'
+for f in Controllers/*.cs; do
+  awk -v f="$f" -v t="$TENANT" '
+    /\[Http(Get|Post|Put|Delete|Patch)/ { if (r != "") print f ":" n, r, "id=" id, "tenant=" c
+                                          r = $0; sub(/^[ \t]+/, "", r); n = NR; id = 0; c = 0 }
+    r != "" && /[A-Za-z]+_?[Ii]d[ ,)]/  { id = 1 }
+    r != "" && $0 ~ t                   { c++ }
+    END { if (r != "") print f ":" n, r, "id=" id, "tenant=" c }' "$f"
+done | awk '$NF == "tenant=0" && $(NF-1) == "id=1"'
+```
+
+It reads text, not the compiler's view: a check done inside a filter, a base
+class or the SQL itself shows as `tenant=0` and must be read before it is
+reported.
+
 Class-level `[Authorize]` is authentication: it proves a caller is logged in, not that the caller may
 touch this row. The finding is an action that takes an identifier and loads the object without any
 owner or tenant condition.

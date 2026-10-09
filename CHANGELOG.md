@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.5 — 2026-10-09
+
+- **Step 4 starts with an authorisation inventory** where objects have
+  owners: every entry point that takes an object id, and whether the code ties
+  that id to the caller. Four reviews of one multi-tenant API by three models
+  each missed some of its seven confirmed holes; the two cross-tenant ones the
+  strongest run missed were found by such a table. The step is in `SKILL.md`,
+  so it applies to every language.
+- **The C# guide gives the command for the inventory**: one line per
+  controller action with its route, whether it takes an id, and how many
+  tenant checks its body has. On that API it listed all six known places.
+
 ## 1.3.4 — 2026-10-09
 
 - **Web searches name only public things.** A Codex review searched the web

@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.4"
+version: "1.3.5"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -348,6 +348,16 @@ names only the tools that produced output.
 For each place that looks wrong, write down a candidate: location, vulnerability
 class, the source of the input, the sink, and what you believe an attacker
 gains. Do not judge yet; collect.
+
+**Where objects have owners — users, organisations, tenants — take an
+authorisation inventory before reading code at random.** List every entry
+point that takes an object id (route, query, form, body field), and for each
+one note whether the code on its way to the database ties that id to the
+caller: an ownership check, a tenant condition in the query, a policy. A row
+with an id and no tie is a candidate. Reading code freely, models found two
+of four such holes in one API and missed the rest; the table found all of
+them, because it does not depend on what catches the eye. The language guide
+says how to list the entry points; the method is the same for every language.
 
 **Is the input attacker-controlled?**
 
