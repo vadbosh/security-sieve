@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.3 — 2026-10-09
+
+- README: a note on Windows, with links. The scanners exist there —
+  trufflehog `windows_*` archives, gitleaks through `winget`, checkov and
+  semgrep through `pip` (semgrep runs natively) — and `scripts/scan.sh` runs
+  them in Git Bash when Git for Windows is installed. Without Git Bash the
+  review stays basic.
+
 ## 1.5.2 — 2026-10-09
 
 - **Refuters run on the session's model in Claude Code.** With

@@ -96,6 +96,18 @@ Windows:
 > [gitleaks](https://github.com/gitleaks/gitleaks/releases),
 > [jq](https://jqlang.org/download/).
 
+> [!NOTE]
+> **Windows.** Сканеры для Windows существуют:
+> - [trufflehog](https://github.com/trufflesecurity/trufflehog/releases): архивы `windows_amd64` и `windows_arm64` на странице релизов;
+> - [gitleaks](https://github.com/gitleaks/gitleaks/releases): `winget install --id Gitleaks.Gitleaks`;
+> - [checkov](https://github.com/bridgecrewio/checkov): `pip install checkov`;
+> - [semgrep](https://semgrep.dev/resources/whats-new/): работает без WSL, `pip install semgrep`.
+>
+> Скилл запускает их через `scripts/scan.sh`, а ему нужен bash. Если стоит
+> Git for Windows и инструменты лежат в `PATH`, Claude Code запускает скрипт
+> в Git Bash, и проверка полная. Без Git Bash проверка базовая: модель читает
+> код, сканеры не запускаются.
+
 | Инструмент | Нужен | Что даёт | Без него |
 |---|---|---|---|
 | Claude Code, Codex или Opencode | да | запускает скилл | — |

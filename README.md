@@ -97,6 +97,18 @@ and the report says what ran.
 > [gitleaks](https://github.com/gitleaks/gitleaks/releases),
 > [jq](https://jqlang.org/download/).
 
+> [!NOTE]
+> **Windows.** The scanners exist for Windows:
+> - [trufflehog](https://github.com/trufflesecurity/trufflehog/releases): `windows_amd64` and `windows_arm64` archives on its releases page;
+> - [gitleaks](https://github.com/gitleaks/gitleaks/releases): `winget install --id Gitleaks.Gitleaks`;
+> - [checkov](https://github.com/bridgecrewio/checkov): `pip install checkov`;
+> - [semgrep](https://semgrep.dev/resources/whats-new/): runs natively, `pip install semgrep`.
+>
+> The skill runs them through `scripts/scan.sh`, which needs bash. With Git
+> for Windows installed and the tools on `PATH`, Claude Code runs it in Git
+> Bash and the review is complete. Without Git Bash the review is basic: the
+> model reads the code, and no scanner runs.
+
 | Tool | Required | Adds | Without it |
 |---|---|---|---|
 | Claude Code, Codex or Opencode | yes | runs the skill | — |
