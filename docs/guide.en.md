@@ -134,9 +134,9 @@ a secret value.
 
 Each finding has the file and line, the CWE, the OWASP Top 10:2025 category,
 an exploit scenario, the refutation score, the fix with code, and its
-variants — the same pattern elsewhere in the repository. The summary lists the
-tools that ran, and says whether git history and uncommitted files were scanned
-for secrets.
+variants — the same pattern elsewhere in the repository. The summary names
+the model that ran the review, lists the tools that ran, and says whether git
+history and uncommitted files were scanned for secrets.
 
 The posture score is a formula, so the same findings always give the same
 score:

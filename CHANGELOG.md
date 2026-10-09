@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — 2026-10-09
+
+- **The skill names the model that runs the review.** Step 0 starts with one
+  line in the chat: the model, and that the method was measured on Claude
+  Opus. On another model it adds what one Sonnet comparison showed and that
+  other models were not measured. The report summary has a new field,
+  **Model**.
+- **The README says that the model matters**, in an IMPORTANT block: Sonnet,
+  compared once on the refutation step, confirmed the same findings but
+  missed one detail and scored one candidate 6 instead of 4.
+
 ## 1.2.0 — 2026-10-09
 
 - **Scanners run in the background in Claude Code.** Step 3 starts them in one

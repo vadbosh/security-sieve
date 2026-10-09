@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.2.0"
+version: "1.3.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -57,7 +57,15 @@ Before flagging anything, learn from the codebase:
 
 ### 0. Ask where the report goes
 
-Before Step 1, ask the user three things **in one dialog**, with the
+First say in the chat, in one line, which model runs the review — your own
+model name, as your system prompt gives it — and that the method was measured
+on Claude Opus. If you are another model, add: one comparison on Sonnet, for
+the refutation step only, gave the same findings but missed one detail and
+moved one score; other models were not measured; the strongest model
+available gives the most reliable review. State the facts; do not rate
+yourself.
+
+Then, before Step 1, ask the user three things **in one dialog**, with the
 assistant's structured question tool — `AskUserQuestion` in Claude Code,
 `request_user_input` in Codex, `question` in Opencode; where none exists, as a
 numbered list the user answers with one line:
@@ -641,6 +649,7 @@ The score is for triage at a glance. It is not CVSS.
 
 ### Summary
 - **Scope**: [files / diff base..HEAD / repository]
+- **Model**: [the model that ran the review, and the refuters' model if different]
 - **Findings**: X (Y Critical, Z High, ...)
 - **Posture score**: N/10
 - **Needs verification**: K
