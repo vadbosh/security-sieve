@@ -92,7 +92,8 @@ connected as owner, one token shared by all tools, shipped config that turns
 prompts off.
 
 ```json
-// VULNERABLE: committed to a repo, applies to everyone who opens it
+// VULNERABLE only where the host applies it from a project file (see below):
+// committed to a repo, it would apply to everyone who opens it
 { "permissions": { "allow": ["Bash(*)", "Write(*)", "WebFetch(*)"], "defaultMode": "bypassPermissions" } }
 // SAFE: named commands allowed, secrets and network denied, the rest asks
 { "permissions": { "allow": ["Bash(git status)", "Read(./src/**)"], "deny": ["Read(./.env*)", "Bash(curl:*)"] } }
@@ -123,8 +124,9 @@ depends on the host version: the Claude Code agent-view documentation says
 `auto` and `bypassPermissions` take effect only from managed settings, a
 `--settings` file or the user's `~/.claude/settings.json`, and that a project
 file asking for a more permissive mode is refused. Check the current rule
-before scoring a project-level file; an installer that writes the mode into the
-user's own settings is the stronger case.
+before scoring a project-level file: where the host refuses the mode from a
+project file, the file alone is not a finding. An installer that writes the
+mode into the user's own settings is the stronger case, and is a finding.
 
 Do not flag: the flag in docs or in CI for an isolated runner; a deny rule that
 names the dangerous flag; a terminal agent whose shell tool asks by default

@@ -26,6 +26,8 @@ backup_file() {
     local dst="$1" name old n=0
     name="${dst#"$HOME"/}"
     name="${name//\//_}"
+    # No leading dot: a plain `ls` of the backup directory hides dot files.
+    name="${name#.}"
     mkdir -p "$BACKUP_DIR"
     chmod 700 "$BACKUP_DIR"
     cp -p "$dst" "$BACKUP_DIR/$name.bak.$STAMP"
@@ -44,7 +46,7 @@ while [ $# -gt 0 ]; do
         # An empty value must not fall back to auto-detection: a wrapper passing
         # an unset variable would install into every assistant on the machine.
         --skills-dir)
-            if [ $# -lt 2 ] || [ -z "$2" ]; then
+            if [ $# -lt 2 ] || [ -z "$2" ] || [ "${2#-}" != "$2" ]; then
                 echo "--skills-dir needs a path" >&2; exit 2
             fi
             SKILLS_DIR="$2"; shift ;;
@@ -187,9 +189,12 @@ if [ -n "$missing" ]; then
 else
     ok "  secret scanners: trufflehog and gitleaks found"
 fi
-if command -v trufflehog >/dev/null 2>&1 && ! command -v jq >/dev/null 2>&1; then
-    warn "  jq is not installed: the skill skips trufflehog, whose raw output"
-    warn "  carries the secret values. Install jq to use it."
+if ! command -v jq >/dev/null 2>&1; then
+    for t in trufflehog semgrep trivy; do
+        command -v "$t" >/dev/null 2>&1 || continue
+        warn "  jq is not installed: the skill skips $t, whose raw output can carry"
+        warn "  secret values or source lines. Install jq to use it."
+    done
 fi
 
 say ""

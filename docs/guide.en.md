@@ -26,8 +26,8 @@ alone. The skill therefore separates finding from judging:
 ## The refutation pass
 
 Where the assistant can start subagents, each candidate gets its own, at most
-five at a time; candidates in one file share one. A subagent sees only what it
-is given, so it gets, in full text:
+five at a time. A subagent sees only what it is given, so it gets, in full
+text:
 
 - the candidate;
 - the refutation step;
@@ -93,6 +93,9 @@ Most scanner output is hardening advice, not an exploit.
 - `checkov` runs with `-o cli --compact`; its JSON was about seven times larger
   for the same findings.
 - `trivy` runs without its secret scanner, whose output carries the values.
+- `semgrep` and `trivy` quote the matched source lines in their JSON; the skill
+  reads both through a `jq` filter that drops those quotes, and skips them
+  without `jq`.
 
 Network use:
 

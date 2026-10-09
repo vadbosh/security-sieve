@@ -59,7 +59,7 @@ what is installed, installs nothing, and the report says what ran.
 | Claude Code, Codex or Opencode | yes | runs the skill | — |
 | `git` | for diff mode | the merge base, the branch diff, untracked files | No diff mode; files and directories are still reviewed |
 | `bash` | for scanners | runs the scanner commands. On Windows: Git Bash | **Basic review**: the model reads the code, no scanner runs. The installer and the report say so |
-| `jq` | for `trufflehog` | reads `trufflehog` output without the secret values | `trufflehog` is skipped; `gitleaks` still runs |
+| `jq` | for `trufflehog`, `semgrep`, `trivy` | reads their output without secret values and quoted source lines | Those three are skipped; `gitleaks` and `checkov` still run |
 | [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | strongly recommended | secrets in every commit and in files not committed yet | A secret is found only if it is in a file the model reads |
 | [`gitleaks`](https://github.com/gitleaks/gitleaks) | strongly recommended | the same, with other rules; values masked by `--redact` | Same as above. One of the two already covers git history |
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | optional | code patterns in many languages. Downloads its rules from the Semgrep registry | The model follows the code from the entry points; on a large tree it may miss a far sink |
@@ -67,7 +67,8 @@ what is installed, installs nothing, and the report says what ran.
 | [`trivy`](https://trivy.dev/) | optional | dependencies and IaC misconfiguration | Partly covered by the others |
 | [`checkov`](https://www.checkov.io/) | optional | policy checks for Terraform, Kubernetes, Dockerfiles, CI | Terraform and Kubernetes are reviewed from the guides alone |
 
-Secret values never reach the model: the skill masks them itself and needs no
+Secret values never reach the model: the skill masks the output of the secret
+scanners and drops the source lines `semgrep` and `trivy` quote. It needs no
 redaction tool on your machine.
 
 ## What it checks

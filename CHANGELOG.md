@@ -19,7 +19,8 @@ getsentry/skills (commit 3482d8dd3531), renamed to `security-sieve`.
   findings. Secret scanners run twice, on git history and on the working
   tree. Output goes to a scratch directory and is read through projections,
   so secret values never reach the model: gitleaks runs with `--redact`,
-  trufflehog is read through `jq` and skipped without it.
+  trufflehog is read through `jq`, and the source lines semgrep and trivy quote
+  are dropped the same way; without `jq` those three are skipped.
 - **Secrets in git history** are findings even when HEAD no longer has them;
   the fix is rotation first. A report always says whether history was
   scanned.

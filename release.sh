@@ -172,7 +172,12 @@ shipped_leaks() {
         return 1
     fi
     # perl, not grep -P: the BSD grep of macOS has no -P.
-    hits="$(cd "$SKILL_DIR" && shipped | grep -vxFf <(awk '$1=="file"{print $3}' "$UPSTREAM") | xargs perl -ne 'print "$ARGV:$.:$_" if m{\Q$ENV{HOME}\E/[\w.-]|/home/(?!user\b)[a-z]|/Users/(?!user\b)[a-z]}; close ARGV if eof' || true)"
+    # One file per perl call, read line by line: xargs split a name with a
+    # space into two, perl failed on both halves, and the check still passed.
+    hits="$(cd "$SKILL_DIR" && shipped | grep -vxFf <(awk '$1=="file"{print $3}' "$UPSTREAM") \
+        | while IFS= read -r f; do
+            perl -ne 'print "$ARGV:$.:$_" if m{\Q$ENV{HOME}\E/[\w.-]|/home/(?!user\b)[a-z]|/Users/(?!user\b)[a-z]}' "$f"
+          done)"
     if [ -n "$hits" ]; then
         echo "  shipped files:    a path of this machine is named in them:"
         echo "$hits" | sed 's/^/    /'

@@ -188,8 +188,13 @@ Rules for these runs:
   rows of each tool. In a directory that is not a git repository run only the
   working-tree rows: `gitleaks git` there prints "no leaks found" with exit 0
   after scanning 0 commits, which is not evidence of anything.
-- **Check the size before reading** the other files (`wc -c`). Over ~20 KB,
-  read the parts that name a rule, a file and a line. `checkov` runs with
+- **Read `semgrep` and `trivy` JSON without its source quotes.** Both copy the
+  matched source lines into their output (`extra.lines`, `Code`), and such a
+  line can hold a secret. Read them through
+  `jq -c 'walk(if type == "object" then del(.lines, .Code) else . end)'`,
+  which removes those fields wherever they are; without `jq`, skip both tools.
+- **Check the size before reading** (`wc -c`). Over ~20 KB, read the parts
+  that name a rule, a file and a line. `checkov` runs with
   `-o cli --compact`: its JSON is about seven times larger for the same
   findings.
 - `trivy` runs without its secret scanner: secrets are the job of the two
@@ -248,7 +253,6 @@ This is the step that makes the report trustworthy. Each candidate is checked
 
 - where the assistant can start subagents (Claude Code `Agent`, Codex and
   Opencode subagents), start one per candidate — at most **5 at a time**;
-  candidates in the same file go to one subagent together;
 - otherwise take them one at a time, and re-read the code for each one
   instead of relying on what you concluded during the hunt.
 

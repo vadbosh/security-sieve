@@ -1,4 +1,4 @@
-<#
+﻿<#
 Install the security-sieve skill — Windows (PowerShell 5.1 or 7).
 Linux / macOS: use install.sh
 
@@ -50,7 +50,8 @@ function Backup-File ([string]$Path) {
     $full = [IO.Path]::GetFullPath($Path)
     $rel  = if ($full.StartsWith("$HOME$Sep", [StringComparison]::OrdinalIgnoreCase)) {
                 $full.Substring($HOME.Length + 1) } else { $full -replace '^([A-Za-z]:)?[\\/]', '' }
-    $name = $rel -replace '[\\/]', '_'
+    # No leading dot: a plain listing of the backup directory hides dot files.
+    $name = ($rel -replace '[\\/]', '_') -replace '^\.', ''
     Copy-Item -LiteralPath $Path -Destination (Join-Path $BackupDir "$name.bak.$Stamp") -Force
     Get-ChildItem -Force -LiteralPath $BackupDir -Filter "$name.bak.*" |
         Sort-Object Name -Descending | Select-Object -Skip 3 | Remove-Item -Force
@@ -179,9 +180,12 @@ if ($missing) {
 } else {
     Ok '  secret scanners: trufflehog and gitleaks found'
 }
-if ((Get-Command trufflehog -ErrorAction SilentlyContinue) -and -not (Get-Command jq -ErrorAction SilentlyContinue)) {
-    Warn '  jq is not installed: the skill skips trufflehog, whose raw output'
-    Warn '  carries the secret values. Install jq to use it.'
+if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
+    foreach ($t in @('trufflehog', 'semgrep', 'trivy')) {
+        if (-not (Get-Command $t -ErrorAction SilentlyContinue)) { continue }
+        Warn "  jq is not installed: the skill skips $t, whose raw output can carry"
+        Warn '  secret values or source lines. Install jq to use it.'
+    }
 }
 
 Say ''
