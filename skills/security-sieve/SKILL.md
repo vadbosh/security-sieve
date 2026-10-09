@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.6"
+version: "1.3.7"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -127,7 +127,18 @@ The questions and their options:
   check whether the file exists, and if it does, choose a name that tells the
   reports apart: the scope (`-diff`, `-api`, `-terraform`), the time
   (`-1645`), or a number (`-2`). Pick what a reader of the directory would
-  understand; say the final path in the chat.
+  understand; say the final path in the chat. Decide the name with this
+  command, in the same call that writes the file — a rule in prose was
+  skipped, and a 36 KB report was replaced by a 7 KB one:
+
+  ```bash
+  f="$HOME/security-reviews/<repo>-$(date +%F).md"     # the path chosen in Step 0
+  b="${f%.*}"; e="${f##*.}"; n=2
+  while [ -e "$f" ]; do f="$b-$n.$e"; n=$((n+1)); done
+  echo "$f"                                             # write here, then chmod 600
+  ```
+
+  A name the scope already tells apart (`-diff`) still goes through the loop.
 
 **Diff mode.** Find the base, then read every change against it:
 

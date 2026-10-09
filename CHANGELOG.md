@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.7 — 2026-10-09
+
+- **A report never replaces another: Step 0 gives the command.** The rule
+  was prose, and a Codex run on GPT-5.6 wrote its 7 KB report over a 36 KB
+  one from GPT-6 with the same name. Step 0 now has a three-line loop that
+  adds `-2`, `-3`, … to the name until it is free, in the same call that
+  writes the file. Tested in bash and in the `bash:3.2` image.
+
 ## 1.3.6 — 2026-10-09
 
 - **A switched session names the right model.** A Codex session opened on
