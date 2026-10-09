@@ -366,6 +366,17 @@ history for the same files; a secret removed from HEAD can still be live.
 A finding needs a live-looking credential: a real host, a non-placeholder password, a key with provider
 structure. Empty values, `"<set in vault>"` and `localhost` development settings are not findings.
 
+**A fallback literal is a secret in source the scanners miss.** Code that reads a key from
+configuration and falls back to a hard-coded value — `cfg["XSecret"] ?? "…"`, or a ternary ending in
+`: "…"` — names the secret in the configuration key, not beside the value, and the value has no
+provider prefix. In one real review neither `trufflehog` nor `gitleaks` reported such a 16-character
+key. Search for it, and read the hits through the projection only — the command prints file and line,
+not the value:
+
+```bash
+rg -n --type cs -o '(Secret|Password|ApiKey|Token|ConnectionString)[^;]*(\?\?|[?] .*:)\s*"' .
+```
+
 A hard-coded passphrase in SQL Server `EncryptByPassPhrase` / `DecryptByPassPhrase` is a finding only
 when an attacker has a read path to the ciphertext (an endpoint, a backup, a shared database).
 

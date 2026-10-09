@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.2"
+version: "1.3.3"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---

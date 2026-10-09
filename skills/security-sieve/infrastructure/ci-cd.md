@@ -305,7 +305,7 @@ Running a parent pipeline is a deliberate maintainer action. The finding is auto
 ```yaml
 # VULNERABLE: token ends up in an artifact
 script:
-  - git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/group/private.git"
+  - git clone "$CI_REPOSITORY_URL" src
   - echo "$CI_REPOSITORY_URL" > repo-url.txt       # URL embeds the token
 artifacts:
   paths: [repo-url.txt]

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.3 — 2026-10-09
+
+- **Guide examples no longer read as credentials.** A secrets hook blocked
+  Codex from reading `languages/csharp.md`, `infrastructure/kubernetes.md` and
+  `infrastructure/ci-cd.md` because example code looked like a secret:
+  `var token = Convert.ToBase64String(…)`, a password in a URL, a base64
+  value, `http_tokens = "optional"`. The examples say the same thing in a form
+  a redactor does not flag; `secrets-redact` finds 0 values in the three files.
+  The copies from Sentry are left as they are.
+- **The C# guide covers fallback literals**: `cfg["XSecret"] ?? "…"` or a
+  ternary ending in `: "…"`. A real review found such a key that neither
+  `trufflehog` nor `gitleaks` reported. The guide gives an `rg -o` command
+  that prints the file and line but not the value.
+
 ## 1.3.2 — 2026-10-09
 
 - **Step 0 checks that the report directory is writable**, right after the

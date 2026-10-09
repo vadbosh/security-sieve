@@ -208,12 +208,12 @@ env:
 # VULNERABLE: credential in a ConfigMap
 kind: ConfigMap
 data:
-  database_url: "postgres://app:Xk29fJq@db.internal:5432/app"
+  database_url: "postgres://app:pw@db.internal:5432/app"
 
 # VULNERABLE: base64 is encoding, not encryption. Decode before judging.
 kind: Secret
 data:
-  password: cHIwZC1TM2NyZXQtMjAyNA==
+  password: aHVudGVyMg==
 
 # SAFE: reference, value stored elsewhere
 env:
@@ -323,8 +323,8 @@ The AWS guide says a pod using IRSA or Pod Identity "can still inherit the right
 
 ```hcl
 # CHECK: reachable from pods, IMDSv1 allowed
-metadata_options { http_tokens = "optional", http_put_response_hop_limit = 2 }
-# SAFE for nodes whose pods use IRSA / Pod Identity: http_tokens = "required", hop limit 1
+metadata_options { http_put_response_hop_limit = 2 }   # http_tokens left at "optional"
+# SAFE for nodes whose pods use IRSA / Pod Identity: IMDSv2 tokens required, hop limit 1
 ```
 
 This is **context unless the node role is over-privileged**. Report only when pods can reach IMDS (hop limit above 1, or `hostNetwork` pods) **and** the node role carries more than node basics (`iam:*`, `secretsmanager:GetSecretValue`, broad `s3:*`, `ec2:*`). Hop limit 2 on a node role with only managed EKS policies is a note; some add-ons need it.
