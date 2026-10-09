@@ -66,7 +66,7 @@ and the report says what ran.
 | Claude Code, Codex or Opencode | yes | runs the skill | — |
 | `git` | for diff mode | the merge base, the branch diff, untracked files | No diff mode; files and directories are still reviewed |
 | `bash` | for scanners | runs the scanner commands. On Windows: Git Bash | **Basic review**: the model reads the code, no scanner runs. The installer and the report say so |
-| [`jq`](https://jqlang.org/download/) | strongly recommended | reads their output without secret values and quoted source lines | Those three are skipped; `gitleaks` and `checkov` still run |
+| [`jq`](https://jqlang.org/download/) | strongly recommended | reads the output of `trufflehog`, `semgrep` and `trivy` without secret values and quoted source lines | `trufflehog`, `semgrep` and `trivy` are skipped; `gitleaks`, `osv-scanner` and `checkov` still run |
 | [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | strongly recommended | secrets in every commit and in files not committed yet | A secret is found only if it is in a file the model reads |
 | [`gitleaks`](https://github.com/gitleaks/gitleaks) | strongly recommended | the same, with other rules; values masked by `--redact` | Same as above. One of the two already covers git history |
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | optional | code patterns in many languages. Downloads its rules from the Semgrep registry | The model follows the code from the entry points; on a large tree it may miss a far sink |
