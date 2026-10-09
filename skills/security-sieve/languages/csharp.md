@@ -375,13 +375,13 @@ CWE-330, CWE-327, CWE-916, CWE-208 | OWASP A04:2025 Cryptographic Failures
 
 ```csharp
 // VULNERABLE for reset tokens, API keys, session ids, invitation codes
-var token = new Random().Next(100000, 999999).ToString();
+var resetCode = new Random().Next(100000, 999999).ToString();
 
 // SAFE
-var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+var resetCode = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
 // VULNERABLE: fast hash for passwords
-MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(password));
+var hash = SHA256.HashData(Encoding.UTF8.GetBytes(password));   // one fast round, no salt
 // SAFE
 var hash = new PasswordHasher<AppUser>().HashPassword(user, password);   // ASP.NET Core Identity, PBKDF2
 var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, 600_000, HashAlgorithmName.SHA256, 32);
