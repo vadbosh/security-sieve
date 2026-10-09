@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.0"
+version: "1.3.1"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -57,18 +57,40 @@ Before flagging anything, learn from the codebase:
 
 ### 0. Ask where the report goes
 
-First say in the chat, in one line, which model runs the review — your own
-model name, as your system prompt gives it — and that the method was measured
-on Claude Opus. If you are another model, add: one comparison on Sonnet, for
-the refutation step only, gave the same findings but missed one detail and
-moved one score; other models were not measured; the strongest model
-available gives the most reliable review. State the facts; do not rate
-yourself.
+First say in the chat which model runs the review — your own model name, as
+your system prompt gives it. One plain sentence in the language of the
+session, written for someone who has not read this skill: no terms from it
+(refutation, candidate, findings), no shorthand, even where the session asks
+for terse replies. In English:
+
+- on Claude Opus: "The review runs on Claude Opus, the model the method was
+  tested on."
+- on any other model: "The review runs on <model>. The method was tested on
+  Claude Opus, not on this model; for an important review, use the strongest
+  model you have."
+
+State the facts; do not rate yourself. The measurements behind this are in
+the README, not in the chat.
 
 Then, before Step 1, ask the user three things **in one dialog**, with the
 assistant's structured question tool — `AskUserQuestion` in Claude Code,
-`request_user_input` in Codex, `question` in Opencode; where none exists, as a
-numbered list the user answers with one line:
+`question` in Opencode, `request_user_input` in Codex (Plan mode only).
+Where the tool is not available — Codex in its default mode, for one — write
+the questions as a numbered list, **every option shown**, with an example
+answer, and end the turn to wait for the reply. This is the only way the
+user can choose, so do not merge the questions into one sentence or drop the
+options. Fill in the repository name and today's date (`date +%F`); only the
+extension waits for the answer. In English:
+
+```
+Where should the report go? Answer with three digits:
+1. Where: 1) ~/security-reviews/<repo>-<YYYY-MM-DD>.<ext>  2) a path you name  3) chat only
+2. Format: 1) md  2) txt  3) html
+3. Language: 1) <language of the session>  2) English
+For example: "1 3 1".
+```
+
+The questions and their options:
 
 | Question | Options | Recommended |
 |----------|---------|-------------|

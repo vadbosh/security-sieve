@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.1 — 2026-10-09
+
+- **The model line is one plain sentence.** In Codex it came out as
+  shorthand: "сравнение refutation на Sonnet дало те же findings…". Step 0
+  now gives the sentence to say, with no terms from the skill; the details of
+  the measurement stay in the README.
+- **Codex in its default mode gets a numbered list.** It has no
+  `request_user_input` there (Plan mode only), and its system prompt forbids
+  multiple-choice text, so the three questions had been merged into one
+  sentence the user could not answer. Step 0 now shows the list with every
+  option and an example answer, with the repository name and date filled in.
+  Tested with `codex exec` on codex-cli 0.162.0.
+- The README block on models says in plain words what Sonnet did differently.
+
 ## 1.3.0 — 2026-10-09
 
 - **The skill names the model that runs the review.** Step 0 starts with one

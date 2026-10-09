@@ -11,13 +11,14 @@ Installation tested on Linux, macOS and Windows — in the `bash:3.2` image and
 with PowerShell 7; real macOS and Windows PowerShell 5.1 are untested.
 
 > [!IMPORTANT]
-> **The model matters.** The method was measured on Claude Opus. Sonnet was
-> compared once, on the refutation step only. It confirmed the same findings
-> but missed one detail. One candidate got 6 points from it instead of 4 from
-> Opus, so it went to "Needs verification" instead of being dropped. Other
-> models, including Codex models, were not measured. Run the review on the
-> strongest model you have. The skill names its model when it starts, and the
-> report names it too.
+> **The model matters.** The method was tested on Claude Opus. Once, Sonnet
+> re-checked the same four suspicions as Opus. It confirmed the same four
+> vulnerabilities, with two differences. It did not notice that a stolen
+> token keeps working after a password change. And it kept one false
+> suspicion in the report as "needs verification", where Opus dropped it.
+> Other models, including Codex models, were not tested. Run the review on
+> the strongest model you have. The skill names its model when it starts, and
+> the report names it too.
 
 [Русская версия](README.RU.md) · [How it works](docs/guide.en.md)
 

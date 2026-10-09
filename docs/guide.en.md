@@ -115,8 +115,10 @@ bash shell)".
 
 ## The report
 
-Before the review starts, the skill asks in one dialog where the report goes,
-in which format and in which language:
+Before the review starts, the skill names the model it runs on and asks in one
+dialog where the report goes, in which format and in which language. Where the
+assistant has no question tool — Codex in its default mode — the questions come
+as a numbered list, and you answer with three digits:
 
 | Question | Options | Default |
 |---|---|---|
