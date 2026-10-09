@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.2 — 2026-10-09
+
+- **Step 0 checks that the report directory is writable**, right after the
+  answer and before any review work. Codex in `workspace-write` writes only
+  to its working directory, `/tmp` and `writable_roots`; it found out about
+  `~/security-reviews` only at the end and put the report in `/tmp`. Now the
+  skill says so at once and offers `/tmp/security-reviews/` or another path.
+  The guide shows the `writable_roots` line for `~/.codex/config.toml`.
+- **`trufflehog` runs with `--no-update`.** In the Codex sandbox it tried to
+  replace its own binary, failed with "cannot move binary" and exited with
+  empty output. Step 3 now also says that an empty output file is not
+  "nothing found" until its log says so.
+- **Step 7 deletes the scratch directory** as an action of its own. The
+  instruction used to be a code comment, and Codex left the directory behind.
+- The README block on models adds a full Codex run on GPT-5: two of the four
+  vulnerabilities found, both cross-customer data access bugs missed.
+
 ## 1.3.1 — 2026-10-09
 
 - **The model line is one plain sentence.** In Codex it came out as

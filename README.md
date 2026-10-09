@@ -16,7 +16,10 @@ with PowerShell 7; real macOS and Windows PowerShell 5.1 are untested.
 > vulnerabilities, with two differences. It did not notice that a stolen
 > token keeps working after a password change. And it kept one false
 > suspicion in the report as "needs verification", where Opus dropped it.
-> Other models, including Codex models, were not tested. Run the review on
+> Codex on GPT-5 reviewed the same repository from start to finish once. It
+> found two of the four vulnerabilities and missed both cases where one
+> customer could read or change another customer's data. Other models were
+> not tested. Run the review on
 > the strongest model you have. The skill names its model when it starts, and
 > the report names it too.
 

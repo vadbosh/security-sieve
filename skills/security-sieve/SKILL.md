@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.1"
+version: "1.3.2"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -106,6 +106,16 @@ The questions and their options:
   asking, and say so in the report's first line.
 - Get the date from `date +%F`, not from memory. Make the directory with
   `mkdir -p` and the file readable only by its owner (`chmod 600`).
+- **Check right after the answer that the directory is writable**, before
+  any review work: `mkdir -p "<dir>" && test -w "<dir>"`. A sandbox can
+  forbid it — Codex in `workspace-write` writes only in its working
+  directory, `/tmp` and its `writable_roots`, and may be configured to
+  refuse every request for more. If the check fails, say so at once and
+  offer `/tmp/security-reviews/` (directory `chmod 700`, file `chmod 600`)
+  or a path the user names; for Codex, add that the directory can be listed
+  in `writable_roots` under `[sandbox_workspace_write]` in
+  `~/.codex/config.toml`. Finding out after the review costs the user the
+  choice.
 - **Never overwrite a report.** Several reviews can run at once — parallel
   subagents, a second run on the same repository the same day. Before writing,
   check whether the file exists, and if it does, choose a name that tells the
@@ -199,7 +209,7 @@ is read through the projection in the table, never raw:
 
 ```bash
 out=$(mktemp -d "${TMPDIR:-/tmp}/security-sieve.$(basename "$PWD").XXXXXX")
-echo "$out"             # note the path; delete the directory once the report is written
+echo "$out"             # note the path; Step 7 deletes it
 TH='{detector: .DetectorName, verified: .Verified,
      where: (.SourceMetadata.Data | to_entries[0].value | {file, line, commit})}'
 ```
@@ -223,9 +233,11 @@ behind the hunt.
 ```bash
 # Secrets — trufflehog: history, then the working tree. The working tree skips
 # .git and third-party trees; history keeps them, an old bin/ may hold a key.
-# stderr is progress logging, not results.
-trufflehog git file://. --no-verification --json > "$out/th-git.ndjson" 2>"$out/th-git.log"
-trufflehog filesystem . --no-verification --json \
+# stderr is progress logging, not results. --no-update: trufflehog otherwise
+# tries to replace its own binary first, and in a sandbox it then exits
+# having scanned nothing ("cannot move binary").
+trufflehog git file://. --no-verification --no-update --json > "$out/th-git.ndjson" 2>"$out/th-git.log"
+trufflehog filesystem . --no-verification --no-update --json \
     -x <(printf '%s\n' '(^|/)\.git/' '(^|/)(\.terraform|node_modules|vendor|bin|obj)/') \
     > "$out/th-fs.ndjson" 2>"$out/th-fs.log"
 # One line per detector and file first; a repeated value can give 1,500 lines.
@@ -290,6 +302,10 @@ Rules for these runs:
 - **A non-zero exit means findings, not a failure.** `gitleaks` exits 1 when it
   finds a leak. Run the commands one by one or joined with `;`, never with
   `&&` or under `set -e`, and judge a run by its output file, not its status.
+- **An empty output file is not "nothing found" until its log says so.**
+  Read the tool's `.log` for `"level":"error"` or a usage message. A failed
+  run is named in "Tools run" as failed, and the secrets lines of the summary
+  say which tool actually covered history — "scanned by gitleaks only".
 - **A JWT hit is checked by its expiry.** Read only the payload's `exp` — the
   token never reaches the screen:
   `jq -c 'select(.DetectorName == "JWT") | {file: .SourceMetadata.Data[].file, line: .SourceMetadata.Data[].line, exp: (.Raw | split(".")[1] | gsub("-"; "+") | gsub("_"; "/") | @base64d | fromjson | .exp | todate)}' "$out/th-git.ndjson"`.
@@ -427,6 +443,12 @@ a different framework path) goes through Step 5 like any candidate.
 Use the output format below, in the format, language and place chosen in
 Step 0. In diff mode, list "Outside the diff" last. Then show the user the
 summary block in the chat and the path of the file.
+
+Then delete the scratch directory from Step 3: `rm -r -- "<out>"`, with the
+path written out. It holds scanner output with secret paths and commits,
+and in `trufflehog`'s case the values. If the assistant's own rules require
+a confirmation for `rm`, ask for it once, naming the path; if the deletion
+is refused or fails, give the user the path and the command.
 
 ---
 

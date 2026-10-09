@@ -107,6 +107,8 @@ Network use:
   access the skill goes on without it;
 - `trufflehog` runs with `--no-verification`. Verification would send every
   key it finds to the provider, so the skill asks before turning it on.
+- `trufflehog` also runs with `--no-update`. Without it, it first tries to
+  replace its own binary, and in a sandbox it then exits without scanning.
 
 The scanner commands are bash. Windows without Git for Windows has no bash:
 Claude Code uses PowerShell there. The review is then basic: the model reads
@@ -133,6 +135,18 @@ report. An existing report is never overwritten: when the name is taken, the
 skill picks one that tells the reports apart — by scope, time or number. Paths,
 code, CWE and OWASP identifiers stay untranslated, and no format ever contains
 a secret value.
+
+Right after your answer the skill checks that it can write to the chosen
+directory. Codex in `workspace-write` mode writes only to its working
+directory, `/tmp` and the directories listed in `writable_roots`, so
+`~/security-reviews` is often closed to it. The skill then says so before
+the review starts and offers `/tmp/security-reviews/` or a path you name. To
+let Codex write to the default directory, add it to `~/.codex/config.toml`:
+
+```toml
+[sandbox_workspace_write]
+writable_roots = ["/home/you/security-reviews"]
+```
 
 Each finding has the file and line, the CWE, the OWASP Top 10:2025 category,
 an exploit scenario, the refutation score, the fix with code, and its
