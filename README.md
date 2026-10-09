@@ -81,8 +81,22 @@ works without it.
 | Claude Code, Codex or Opencode | yes | runs the skill | — |
 | `git` | for diff mode | finding the merge base and the diff | Diff mode is not available. Code mode still works on files and directories |
 
-The scanners are all optional. The skill runs the ones already on `PATH`, with
-the command shown, and never installs one:
+> [!IMPORTANT]
+> **Install `trufflehog` and `gitleaks`.** They are the only way the review
+> sees git history. A key deleted three commits ago is still in every clone,
+> and reading the current files will not find it. Without either scanner the
+> report says "Secrets in git history: NOT scanned".
+>
+> ```bash
+> brew install trufflehog gitleaks
+> ```
+>
+> Other systems: the release pages of
+> [trufflehog](https://github.com/trufflesecurity/trufflehog/releases) and
+> [gitleaks](https://github.com/gitleaks/gitleaks/releases).
+
+The skill runs without the scanners, but with less coverage. It runs the ones
+already on `PATH`, with the command shown, and never installs one:
 
 | Scanner | Command the skill runs | Adds | If it is missing |
 |---|---|---|---|

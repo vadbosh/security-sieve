@@ -131,6 +131,12 @@ like any other — most of their output is hardening advice, not an exploit.
 | `trivy` | `trivy fs --scanners vuln,secret,misconfig --format json .` | dependencies, secrets, IaC |
 | `checkov` | `checkov -d . --compact --quiet -o json` | Terraform, Kubernetes, Dockerfile, CI |
 
+**The secret scanners matter most.** `trufflehog` and `gitleaks` are the only
+way the review sees git history: a key deleted three commits ago is invisible
+to reading the current files. When neither is installed, say so in the report
+summary — "Secrets in git history: NOT scanned" — and recommend installing
+them; never let an empty secrets section read as "no secrets".
+
 Two of these talk to the network. `semgrep` downloads its registry rules.
 `trufflehog` without `--no-verification` sends every key it finds to the
 provider's API to test it — ask the user before turning verification on.
@@ -253,7 +259,8 @@ These are not reported, whatever their severity would be:
     finding only when the model can then reach a tool with real side effects
     or an exfiltration channel without a gate — `references/agentic.md`.
 11. Secrets on disk that are otherwise protected (permissions, encryption, a
-    secrets store).
+    secrets store). Git history is not such protection: a secret committed
+    once is readable by everyone who can clone — see "Secrets in code".
 
 ### Precedents
 
@@ -367,6 +374,22 @@ private_key = <PEM block>
 Confirm it is a real credential, not a placeholder, a test fixture or a public
 key. A live production secret is Critical whatever else the report contains.
 
+**A secret in git history is a finding even when HEAD no longer has it.**
+Deleting the line in a later commit revokes nothing: every clone, fork and
+cache still holds the commit. Three rules for the refutation pass:
+
+- "It is not in the current code" does not lower the score. Report the commit
+  and the path where the secret appears.
+- "Liveness is not verified" does not lower the score either. The scanners run
+  without verification, so treat the secret as live until the user confirms it
+  is revoked.
+- Severity follows who can read the history: Critical for a production
+  credential in a public repository or one shared beyond the key's owners;
+  High in a private repository.
+
+The fix is always **rotate or revoke first**. Rewriting history afterwards is
+optional and does not replace rotation.
+
 ### Check the context first
 ```
 # SSRF - only if the URL comes from user input
@@ -407,7 +430,7 @@ always give the same score.
 | **9-10** | No findings |
 
 - Needs-verification items and findings outside the diff do not affect the score.
-- A live production secret in code is an automatic `1`.
+- A live production secret, in code or in git history, is an automatic `1`.
 - A diff that fixes earlier Critical/High findings and introduces nothing new
   scores at least `8`.
 
@@ -426,6 +449,7 @@ The score is for triage at a glance. It is not CVSS.
 - **Posture score**: N/10
 - **Needs verification**: K
 - **Tools run**: [semgrep, trufflehog, ... / none installed]
+- **Secrets in git history**: [scanned by trufflehog / gitleaks — or "NOT scanned: neither trufflehog nor gitleaks is installed"]
 
 ### Findings
 

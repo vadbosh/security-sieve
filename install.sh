@@ -151,6 +151,26 @@ while read -r dir; do
     fi
 done < <(detect_skill_dirs)
 
+# The secret scanners are the only way a review sees git history; without them
+# a key deleted in an old commit is never found. Say so loudly, every install.
+missing=""
+for t in trufflehog gitleaks; do
+    command -v "$t" >/dev/null 2>&1 || missing="$missing $t"
+done
+say ""
+if [ -n "$missing" ]; then
+    warn "  ┌─ STRONGLY RECOMMENDED ─────────────────────────────────────────"
+    warn "  │ Not installed:$missing"
+    warn "  │ Without trufflehog or gitleaks the review cannot see secrets"
+    warn "  │ in git history; reports will say \"NOT scanned\"."
+    warn "  │   brew install$missing"
+    warn "  │   or: https://github.com/trufflesecurity/trufflehog/releases"
+    warn "  │       https://github.com/gitleaks/gitleaks/releases"
+    warn "  └────────────────────────────────────────────────────────────────"
+else
+    ok "  secret scanners: trufflehog and gitleaks found"
+fi
+
 say ""
 say "  In your assistant: '/security-sieve <what>', or ask for a security review."
 say "  With no target inside a git repository it reviews the branch diff."
