@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Threat Modeling and CVE Triage Reference
 
 STRIDE threat modeling, attack surface, CVE research, dependency triage and a

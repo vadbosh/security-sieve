@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Cloud Infrastructure Security Reference
 
 IAM, service-to-service TLS, secrets, network and compliance for cloud-native

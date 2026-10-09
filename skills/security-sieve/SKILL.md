@@ -1,207 +1,342 @@
 ---
-name: security-review
-description: Security in one skill — code review for vulnerabilities (OWASP, injection, XSS, auth, crypto), STRIDE threat modeling and attack surface, CVE and dependency triage (SBOM, CVSS), and cloud infrastructure security (IAM least privilege, Vault and secrets, mTLS, network, compliance). Use when asked to "security review", "find vulnerabilities", "audit security", "threat model", "is this CVE exploitable", "audit IAM", "harden secrets/mTLS". Reports high-confidence findings only.
-version: "1.1.0"
-allowed-tools: Read, Grep, Glob, Bash, Task
+name: security-sieve
+description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
+version: "1.0.0"
+allowed-tools: Read Grep Glob Bash Task
 license: LICENSE
 ---
 
-> **Quick reference:** Read `CAPABILITIES.md` in this directory first — authoritative digest of commands, supported targets, and gotchas.
-
 <!--
-Reference material based on OWASP Cheat Sheet Series (CC BY-SA 4.0)
-https://cheatsheetseries.owasp.org/
+Derived from getsentry/skills, skills/security-review (Apache-2.0), with
+changes. Reference material in references/, languages/python.md,
+languages/javascript.md and infrastructure/docker.md is based on the OWASP
+Cheat Sheet Series (CC BY-SA 4.0): https://cheatsheetseries.owasp.org/
+See LICENSE in this directory for which file is under which license.
 -->
 
-# Security Review Skill
+# security-sieve
 
-Identify exploitable security vulnerabilities in code. Report only **HIGH CONFIDENCE** findings — clear vulnerable patterns with attacker-controlled input.
+Find security vulnerabilities an attacker can actually exploit, and report
+nothing else. The method is two passes: a hunt that collects candidates, and a
+refutation pass that tries to break each candidate on its own. Only what
+survives the second pass is a finding.
 
-Three kinds of request, one skill (the former `security-researcher` and
-`security-engineer` live in its references):
+Reviewers, human and model alike, are biased toward seeing bugs and toward
+overrating their severity. A report with three real findings is worth more than
+one with three real findings among twenty plausible ones: the reader cannot
+tell which three.
 
-| Request | Start with |
-|---------|-----------|
-| Review code, a diff, a file | the Review Process below |
-| Threat model, attack surface, "is this CVE exploitable", dependency audit | `references/threat-modeling.md` |
-| IAM, secrets, Vault, mTLS, network, compliance | `infrastructure/cloud.md` |
+## Modes
 
-The confidence rules below apply to all three: report what is confirmed, mark
-what needs verification, drop the theoretical.
+| Request | Mode | Start with |
+|---------|------|-----------|
+| "review my changes", "this branch", "this PR", no target named inside a git repository with changes | **Diff** | Step 1, diff scope |
+| A file, a directory, a whole repository | **Code** | Step 1, code scope |
+| Threat model, attack surface, "is this CVE exploitable", dependency triage | **Threat model** | `references/threat-modeling.md` |
+| IAM, secrets, Vault, mTLS, Kubernetes, Terraform, CI pipelines | **Infrastructure** | the guide in `infrastructure/` |
 
-## Scope: Research vs. Reporting
+Every mode ends in the same refutation pass (Step 5) and the same report.
 
-**CRITICAL DISTINCTION:**
+## Scope: research vs. reporting
 
-- **Report on**: Only specific file, diff, or code provided by user
-- **Research**: ENTIRE codebase to build confidence before reporting
+- **Report on** only the code, diff or configuration the user named.
+- **Research** the entire repository to build confidence before reporting.
 
-Before flagging any issue, MUST research codebase to understand:
-- Where does input come from? (Trace data flow)
-- Is there validation/sanitization elsewhere?
-- How is this configured? (Check settings, config files, middleware)
-- What framework protections exist?
+Before flagging anything, learn from the codebase:
 
-**Do NOT report issues based solely on pattern matching.** Investigate first, report only what confirmed exploitable.
+- Where does the input come from? Trace the data flow back to its source.
+- Is it validated, sanitised or allowlisted elsewhere?
+- How is it configured — settings, config files, middleware?
+- What does the framework already protect against?
 
-## Confidence Levels
+**Never report on pattern matching alone.** A match is a candidate, not a finding.
 
-| Level | Criteria | Action |
-|-------|----------|--------|
-| **HIGH** | Vulnerable pattern + attacker-controlled input confirmed | **Report** with severity |
-| **MEDIUM** | Vulnerable pattern, input source unclear | **Note** as "Needs verification" |
-| **LOW** | Theoretical, best practice, defense-in-depth | **Do not report** |
+## Process
 
-## Do Not Flag
+### 1. Fix the scope
 
-### General Rules
-- Test files (unless explicitly reviewing test security)
-- Dead code, commented code, documentation strings
-- Patterns using **constants** or **server-controlled configuration**
-- Code paths requiring prior authentication (note auth requirement instead)
+**Diff mode.** Find the base, then read every change against it:
 
-### Server-Controlled Values (NOT Attacker-Controlled)
+```bash
+base=$(git merge-base HEAD origin/HEAD 2>/dev/null \
+    || git merge-base HEAD origin/main 2>/dev/null \
+    || git merge-base HEAD main)
+git log --oneline "$base"..HEAD          # what the branch is
+git diff --name-only "$base"...HEAD      # committed changes
+git diff HEAD                            # plus what is not committed yet
+```
 
-Configured by operators, not controlled by attackers:
+Report only what the change **introduces or makes reachable**: a new sink, a
+removed check, a widened permission, a new route to old vulnerable code. An old
+vulnerability the diff does not touch goes under "Outside the diff" at the end
+of the report, one line each, and never counts toward the score.
 
-| Source | Example | Why It's Safe |
-|--------|---------|---------------|
+**Code mode.** List the entry points first — routes, handlers, CLI arguments,
+message consumers, file and network readers. Read outward from them; a sink
+nothing reaches is not a finding.
+
+### 2. Load the guides
+
+What kind of code is it?
+
+| Code type | Load | OWASP Top 10:2025 |
+|-----------|------|-------------------|
+| API endpoints, routes | `authorization.md`, `authentication.md`, `injection.md` | A01, A07, A05 |
+| Frontend, templates | `xss.md`, `csrf.md` | A05, A01 |
+| File handling, uploads | `file-security.md` | A01 |
+| Crypto, secrets, tokens | `cryptography.md`, `data-protection.md` | A04 |
+| Data serialisation | `deserialization.md` | A08 |
+| Outbound requests | `ssrf.md` | A01 |
+| Business workflows | `business-logic.md` | A06 |
+| GraphQL, REST design | `api-security.md` | A01 |
+| Config, headers, CORS | `misconfiguration.md` | A02 |
+| Dependencies, build | `supply-chain.md` | A03 |
+| CVEs, SBOM, CVSS, threat model | `threat-modeling.md` | — |
+| Error handling, fail-open | `error-handling.md` | A10 |
+| Audit, logging | `logging.md` | A09 |
+| LLM features, prompt injection, WebSocket | `modern-threats.md` | A05 |
+| Agent tools, MCP servers and clients, skills, hooks, plugins | `agentic.md` | — |
+
+All of them live in `references/`.
+
+Then the language and the infrastructure:
+
+| Indicators | Guide |
+|------------|-------|
+| `.py`, `django`, `flask`, `fastapi` | `languages/python.md` |
+| `.js`, `.ts`, `express`, `react`, `vue`, `next` | `languages/javascript.md` |
+| `.php`, `laravel`, `symfony`, `composer.json` | `languages/php.md` |
+| `Dockerfile`, `.dockerignore`, compose files | `infrastructure/docker.md` |
+| Kubernetes manifests, Helm charts and values | `infrastructure/kubernetes.md` |
+| `.tf`, `.tfvars`, OpenTofu, Terragrunt | `infrastructure/terraform.md` |
+| `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile` | `infrastructure/ci-cd.md` |
+| Cloud IAM, secrets managers, mTLS, network, compliance | `infrastructure/cloud.md` |
+
+No guide for the language: use the core references and the framework's own
+security documentation.
+
+### 3. Collect tool evidence, if the tools are there
+
+A scanner finds what a reader misses on a large tree, and its output is
+reproducible. Run what is **already installed**; never install anything for
+the review. Every scanner hit is a **candidate** and goes through Steps 4–5
+like any other — most of their output is hardening advice, not an exploit.
+
+| Tool | Read-only run | Finds |
+|------|---------------|-------|
+| `semgrep` | `semgrep scan --config p/default --metrics=off --json <path>` | code patterns, many languages |
+| `trufflehog` | `trufflehog git file://. --no-verification --json` | secrets, including git history |
+| `gitleaks` | `gitleaks git --no-banner --report-format json --report-path - .` | secrets |
+| `osv-scanner` | `osv-scanner scan source -r --format json .` | known-vulnerable dependencies |
+| `trivy` | `trivy fs --scanners vuln,secret,misconfig --format json .` | dependencies, secrets, IaC |
+| `checkov` | `checkov -d . --compact --quiet -o json` | Terraform, Kubernetes, Dockerfile, CI |
+
+Two of these talk to the network. `semgrep` downloads its registry rules.
+`trufflehog` without `--no-verification` sends every key it finds to the
+provider's API to test it — ask the user before turning verification on.
+
+Each tool's flags change between versions; on an error, read its `--help`
+instead of guessing.
+
+### 4. Hunt for candidates
+
+For each place that looks wrong, write down a candidate: location, vulnerability
+class, the source of the input, the sink, and what you believe an attacker
+gains. Do not judge yet; collect.
+
+**Is the input attacker-controlled?**
+
+| Attacker-controlled (investigate) | Server-controlled (usually safe) |
+|-----------------------------------|----------------------------------|
+| `request.GET`, `request.POST`, `request.args` | `settings.X`, `app.config['X']` |
+| `request.json`, `request.data`, `request.body` | `os.environ.get('X')` |
+| `request.headers` (most headers) | Hardcoded constants |
+| `request.cookies` (unsigned) | Internal service URLs from config |
+| URL path segments: `/users/<id>/` | Database content written by admins or the system |
+| File uploads (content and names) | Signed session data |
+| Database content written by other users | Framework settings |
+| WebSocket messages, queue messages from outside | CLI flags of a tool the user runs themselves |
+| Content an AI agent reads: web pages, issues, emails, files from others | |
+
+**Does the framework mitigate it?** Check the language guide for
+auto-escaping, parameterisation and middleware.
+
+**Is there validation upstream?** Validation before this code, sanitising
+libraries (DOMPurify, bleach), allowlists.
+
+### 5. Refute every candidate
+
+This is the step that makes the report trustworthy. Each candidate is checked
+**on its own, in a fresh context**:
+
+- where the assistant can start subagents (Claude Code `Task`, Codex and
+  Opencode subagents), start one per candidate, in parallel, and give it the
+  candidate plus this step — not the other candidates;
+- otherwise take them one at a time, and re-read the code for each one
+  instead of relying on what you concluded during the hunt.
+
+The refuter's job is to **break** the candidate, not to confirm it:
+
+1. **Restate the claim** in one sentence: "an unauthenticated user can make the
+   server do X by sending Y to Z". A claim that cannot be stated this way is
+   not a finding — many false positives collapse here.
+2. **Walk the chain** and attack each link: is the source really
+   attacker-controlled? Is the path from source to sink reachable — called,
+   routed, enabled in this configuration? Does anything on the way validate,
+   escape or reject the input? Does the framework neutralise the sink?
+3. **Check the exclusions** in "Do not flag" below. A match ends the candidate.
+4. **Write the exploit scenario**: who the attacker is, the request or input,
+   what happens. If you cannot write it concretely, it is not a finding.
+5. **Score** the candidate 1–10 for "this is exploitable as described".
+
+| Score | Outcome |
+|-------|---------|
+| 8–10 | **Finding** — reported with severity |
+| 5–7 | **Needs verification** — reported with the question that would settle it |
+| 1–4 | Dropped, not mentioned |
+
+Rationalisations to reject during refutation:
+
+| Thought | Why it does not count |
+|---------|----------------------|
+| "It could be exploitable if…" | A condition you have not shown to hold is a reason to drop or to ask, not to report. |
+| "Better safe than sorry" | A false finding costs the reader trust in every true one. |
+| "The pattern is always dangerous" | `eval` of a constant is not RCE. Show the input. |
+| "Severity is high, so confidence matters less" | Severity and confidence are separate; a speculative critical is still speculative. |
+| "The scanner flagged it" | A scanner reports patterns. Its hit is a candidate like any other. |
+
+### 6. Look for variants
+
+A confirmed finding is evidence of a habit. Search the repository for the same
+pattern — the same sink, the same missing check, the same helper used
+elsewhere — and send every variant through Step 5. Report variants under the
+original finding with their locations; do not repeat the explanation.
+
+### 7. Report
+
+Use the output format below. In diff mode, list "Outside the diff" last.
+
+---
+
+## Do not flag
+
+### General
+
+- Test files and fixtures, unless the user asked to review test security.
+- Dead code, commented code, documentation and Markdown files.
+- Values that are constants or server-controlled configuration.
+- Code paths behind authentication — note the requirement instead, and still
+  report what an authenticated user can do to other users (IDOR, privilege
+  escalation).
+
+### Classes excluded outright
+
+These are not reported, whatever their severity would be:
+
+1. Denial of service, resource exhaustion, missing rate limits, memory or CPU
+   consumption, regex denial of service.
+2. Missing hardening on its own — a header, a flag, a policy that is absent.
+   Code is not required to implement every best practice; a finding needs a
+   concrete exploit.
+3. Outdated third-party libraries, unless the threat-model mode was asked for
+   or the vulnerable function is shown to be called with attacker input.
+4. Theoretical race conditions and timing attacks. Report a race only with a
+   concrete interleaving and its effect.
+5. Memory-safety issues in memory-safe languages.
+6. Log spoofing: unsanitised user input written to logs.
+7. A missing audit log.
+8. SSRF where the attacker controls only the path, not the host or the scheme.
+9. Regex injection: untrusted text inside a regular expression.
+10. User-controlled text inside an AI prompt, **by itself**. It becomes a
+    finding only when the model can then reach a tool with real side effects
+    or an exfiltration channel without a gate — `references/agentic.md`.
+11. Secrets on disk that are otherwise protected (permissions, encryption, a
+    secrets store).
+
+### Precedents
+
+- Environment variables and CLI flags are trusted: an attack that needs to
+  control them is not an attack.
+- UUIDs are unguessable.
+- React and Angular escape output unless `dangerouslySetInnerHTML`,
+  `bypassSecurityTrustHtml` or an equivalent is used.
+- Missing permission checks in client-side code are not findings: the server
+  enforces them.
+- GitHub Actions, shell scripts and notebooks need a concrete path for
+  untrusted input — who can trigger the workflow, who supplies the argument —
+  before an injection in them is reported.
+- Open redirects, tabnabbing and XS-Leaks only at very high confidence.
+- Logging secrets in plain text is a finding. Logging URLs and non-sensitive
+  data is not.
+
+### Server-controlled values (not attacker-controlled)
+
+| Source | Example | Why it is safe |
+|--------|---------|----------------|
 | Django settings | `settings.API_URL`, `settings.ALLOWED_HOSTS` | Set via config/env at deployment |
 | Environment variables | `os.environ.get('DATABASE_URL')` | Deployment configuration |
 | Config files | `config.yaml`, `app.config['KEY']` | Server-side files |
 | Framework constants | `django.conf.settings.*` | Not user-modifiable |
 | Hardcoded values | `BASE_URL = "https://api.internal"` | Compile-time constants |
 
-**SSRF Example - NOT a vulnerability:**
+**SSRF — not a vulnerability:**
 ```python
-# SAFE: URL comes from Django settings (server-controlled)
+# SAFE: the URL comes from Django settings (server-controlled)
 response = requests.get(f"{settings.SEER_AUTOFIX_URL}{path}")
 ```
 
-**SSRF Example - IS a vulnerability:**
+**SSRF — a vulnerability:**
 ```python
-# VULNERABLE: URL comes from request (attacker-controlled)
+# VULNERABLE: the URL comes from the request (attacker-controlled)
 response = requests.get(request.GET.get('url'))
 ```
 
-### Framework-Mitigated Patterns
-Check language guides before flagging. Common false positives:
+### Framework-mitigated patterns
 
-| Pattern | Why It's Usually Safe |
-|---------|----------------------|
+| Pattern | Why it is usually safe |
+|---------|------------------------|
 | Django `{{ variable }}` | Auto-escaped by default |
 | React `{variable}` | Auto-escaped by default |
 | Vue `{{ variable }}` | Auto-escaped by default |
-| `User.objects.filter(id=input)` | ORM parameterizes queries |
-| `cursor.execute("...%s", (input,))` | Parameterized query |
+| Blade `{{ $variable }}` | Auto-escaped by default |
+| `User.objects.filter(id=input)` | The ORM parameterises the query |
+| `cursor.execute("...%s", (input,))` | Parameterised query |
 | `innerHTML = "<b>Loading...</b>"` | Constant string, no user input |
 
-**Only flag these when:**
+Flag them only when the protection is switched off:
+
 - Django: `{{ var|safe }}`, `{% autoescape off %}`, `mark_safe(user_input)`
 - React: `dangerouslySetInnerHTML={{__html: userInput}}`
 - Vue: `v-html="userInput"`
-- ORM: `.raw()`, `.extra()`, `RawSQL()` with string interpolation
-
-## Review Process
-
-### 1. Detect Context
-
-What type of code under review?
-
-| Code Type | Load These References |
-|-----------|----------------------|
-| API endpoints, routes | `authorization.md`, `authentication.md`, `injection.md` |
-| Frontend, templates | `xss.md`, `csrf.md` |
-| File handling, uploads | `file-security.md` |
-| Crypto, secrets, tokens | `cryptography.md`, `data-protection.md` |
-| Data serialization | `deserialization.md` |
-| External requests | `ssrf.md` |
-| Business workflows | `business-logic.md` |
-| GraphQL, REST design | `api-security.md` |
-| Config, headers, CORS | `misconfiguration.md` |
-| CI/CD, dependencies | `supply-chain.md` |
-| CVEs, SBOM, CVSS, threat model | `threat-modeling.md` |
-| Error handling | `error-handling.md` |
-| Audit, logging | `logging.md` |
-
-### 2. Load Language Guide
-
-Based on file extension or imports:
-
-| Indicators | Guide |
-|------------|-------|
-| `.py`, `django`, `flask`, `fastapi` | `languages/python.md` |
-| `.js`, `.ts`, `express`, `react`, `vue`, `next` | `languages/javascript.md` |
-
-No guide for another language: use the core references and the framework's own docs.
-
-### 3. Load Infrastructure Guide (if applicable)
-
-| File Type | Guide |
-|-----------|-------|
-| `Dockerfile`, `.dockerignore` | `infrastructure/docker.md` |
-| AWS/GCP/Azure configs, IAM, `.tf`, K8s RBAC and secrets | `infrastructure/cloud.md` |
-| CI/CD pipelines | `references/supply-chain.md` |
-
-### 4. Research Before Flagging
-
-**For each potential issue, research codebase to build confidence:**
-
-- Where does value come from? Trace data flow.
-- Configured at deployment (settings, env vars) or from user input?
-- Is there validation, sanitization, or allowlisting elsewhere?
-- What framework protections apply?
-
-Report only issues with HIGH confidence after understanding broader context.
-
-### 5. Verify Exploitability
-
-For each potential finding, confirm:
-
-**Is input attacker-controlled?**
-
-| Attacker-Controlled (Investigate) | Server-Controlled (Usually Safe) |
-|-----------------------------------|----------------------------------|
-| `request.GET`, `request.POST`, `request.args` | `settings.X`, `app.config['X']` |
-| `request.json`, `request.data`, `request.body` | `os.environ.get('X')` |
-| `request.headers` (most headers) | Hardcoded constants |
-| `request.cookies` (unsigned) | Internal service URLs from config |
-| URL path segments: `/users/<id>/` | Database content from admin/system |
-| File uploads (content and names) | Signed session data |
-| Database content from other users | Framework settings |
-| WebSocket messages | |
-
-**Does framework mitigate this?**
-- Check language guide for auto-escaping, parameterization
-- Check for middleware/decorators that sanitize
-
-**Is there validation upstream?**
-- Input validation before this code
-- Sanitization libraries (DOMPurify, bleach, etc.)
-
-### 6. Report HIGH Confidence Only
-
-Skip theoretical issues. Report only confirmed exploitable after research.
+- Blade: `{!! $userInput !!}`
+- ORM: `.raw()`, `.extra()`, `RawSQL()`, `whereRaw()` with string interpolation
 
 ---
 
-## Severity Classification
+## Severity
+
+Severity is set after refutation, for findings only.
 
 | Severity | Impact | Examples |
 |----------|--------|----------|
-| **Critical** | Direct exploit, severe impact, no auth required | RCE, SQL injection to data, auth bypass, hardcoded secrets |
-| **High** | Exploitable with conditions, significant impact | Stored XSS, SSRF to metadata, IDOR to sensitive data |
-| **Medium** | Specific conditions required, moderate impact | Reflected XSS, CSRF on state-changing actions, path traversal |
-| **Low** | Defense-in-depth, minimal direct impact | Missing headers, verbose errors, weak algorithms in non-critical context |
+| **Critical** | Direct exploit, severe impact, no authentication needed | RCE, SQL injection reaching data, authentication bypass, a live production secret in code |
+| **High** | Exploitable under conditions, significant impact | Stored XSS, SSRF to cloud metadata, IDOR on sensitive data, CI injection from a fork PR |
+| **Medium** | Specific conditions, moderate impact | Reflected XSS, CSRF on a state-changing action, path traversal limited to readable files |
+| **Low** | Exploitable, minimal impact | Open redirect proven reachable, disclosure of internal hostnames |
+
+Missing headers, verbose errors and weak algorithms with no exploit path are
+hardening, not Low findings: they are excluded above.
 
 ---
 
-## Quick Patterns Reference
+## Quick patterns
 
-### Always Flag (Critical)
+Every line below is a **candidate** to trace, not a verdict.
+
+### Usually critical when the input is attacker-controlled
 ```
-eval(user_input)           # Any language
-exec(user_input)           # Any language
+eval(user_input)           # any language
+exec(user_input)           # any language
 pickle.loads(user_data)    # Python
 yaml.load(user_data)       # Python (not safe_load)
 unserialize($user_data)    # PHP
@@ -210,109 +345,121 @@ shell=True + user_input    # Python subprocess
 child_process.exec(user)   # Node.js
 ```
 
-### Always Flag (High)
+### Usually high when the input is attacker-controlled
 ```
 innerHTML = userInput              # DOM XSS
 dangerouslySetInnerHTML={user}     # React XSS
 v-html="userInput"                 # Vue XSS
 f"SELECT * FROM x WHERE {user}"    # SQL injection
 `SELECT * FROM x WHERE ${user}`    # SQL injection
-os.system(f"cmd {user_input}")     # Command injection
+os.system(f"cmd {user_input}")     # command injection
 ```
 
-### Always Flag (Secrets)
+### Secrets in code
 ```
-password = "hardcoded"
-api_key = "sk-..."
-AWS_SECRET_ACCESS_KEY = "..."
-private_key = "-----BEGIN"
+password = <string literal>
+api_key = <string literal with a provider prefix>
+AWS_SECRET_ACCESS_KEY = <string literal>
+private_key = <PEM block>
 ```
+Confirm it is a real credential, not a placeholder, a test fixture or a public
+key. A live production secret is Critical whatever else the report contains.
 
-### Check Context First (MUST Investigate Before Flagging)
+### Check the context first
 ```
-# SSRF - ONLY if URL is from user input, NOT from settings/config
-requests.get(request.GET['url'])     # FLAG: User-controlled URL
-requests.get(settings.API_URL)       # SAFE: Server-controlled config
-requests.get(f"{settings.BASE}/{x}") # CHECK: Is 'x' user input?
+# SSRF - only if the URL comes from user input
+requests.get(request.GET['url'])     # FLAG: user-controlled URL
+requests.get(settings.API_URL)       # SAFE: server-controlled config
+requests.get(f"{settings.BASE}/{x}") # CHECK: is 'x' user input? path only → excluded
 
-# Path traversal - ONLY if path is from user input
-open(request.GET['file'])            # FLAG: User-controlled path
-open(settings.LOG_PATH)              # SAFE: Server-controlled config
-open(f"{BASE_DIR}/{filename}")       # CHECK: Is 'filename' user input?
+# Path traversal - only if the path comes from user input
+open(request.GET['file'])            # FLAG: user-controlled path
+open(settings.LOG_PATH)              # SAFE: server-controlled config
+open(f"{BASE_DIR}/{filename}")       # CHECK: is 'filename' user input?
 
-# Open redirect - ONLY if URL is from user input
-redirect(request.GET['next'])        # FLAG: User-controlled redirect
-redirect(settings.LOGIN_URL)         # SAFE: Server-controlled config
+# Open redirect - only if the URL comes from user input
+redirect(request.GET['next'])        # FLAG: user-controlled redirect
+redirect(settings.LOGIN_URL)         # SAFE: server-controlled config
 
-# Weak crypto - ONLY if used for security purposes
-hashlib.md5(file_content)            # SAFE: File checksums, caching
-hashlib.md5(password)                # FLAG: Password hashing
-random.random()                      # SAFE: Non-security uses (UI, sampling)
-random.random() for token            # FLAG: Security tokens need secrets module
+# Weak crypto - only if used for security
+hashlib.md5(file_content)            # SAFE: checksums, caching
+hashlib.md5(password)                # FLAG: password hashing
+random.random()                      # SAFE: non-security uses
+random.random() for token            # FLAG: tokens need the secrets module
 ```
 
 ---
 
-## Security Posture Score
+## Posture score
 
-After listing findings, compute deterministic score `1-10` reflecting overall security posture of reviewed code/diff. **Apply worst-matching rule** — do not adjust subjectively. Same findings → same score.
+After the findings, compute a score `1-10` for the reviewed code or diff.
+**Apply the worst matching rule** — do not adjust by feel. The same findings
+always give the same score.
 
 | Score | Trigger |
 |-------|---------|
-| **1-2**  | Any **Critical** finding (RCE, auth bypass, exposed secret) |
-| **3-4**  | Multiple **High** findings, OR 1 High + 1+ Medium |
-| **5-6**  | Single **High**, OR 3+ **Medium** findings |
-| **7-8**  | Only **Medium/Low** findings, ≤2 total |
-| **9-10** | No high-confidence findings; at most defense-in-depth notes |
+| **1-2**  | Any **Critical** finding |
+| **3-4**  | Several **High** findings, or 1 High and 1+ Medium |
+| **5-6**  | One **High**, or 3+ **Medium** findings |
+| **7-8**  | Only **Medium/Low** findings, 2 or fewer in total |
+| **9-10** | No findings |
 
-Rules:
-- `Needs Verification` items do not affect score (no confidence yet).
-- Hardcoded production secret → automatic `1` regardless of other findings.
-- Diff fixes previously-flagged Critical/High, introduces nothing new → minimum `8`.
+- Needs-verification items and findings outside the diff do not affect the score.
+- A live production secret in code is an automatic `1`.
+- A diff that fixes earlier Critical/High findings and introduces nothing new
+  scores at least `8`.
 
-Score lets reviewers triage at a glance. **Not** a CVSS substitute.
+The score is for triage at a glance. It is not CVSS.
 
 ---
 
-## Output Format
+## Output format
 
 ```markdown
-## Security Review: [File/Component Name]
+## Security review: [file, component or branch]
 
 ### Summary
+- **Scope**: [files / diff base..HEAD / repository]
 - **Findings**: X (Y Critical, Z High, ...)
-- **Risk Level**: Critical/High/Medium/Low
-- **Posture Score**: N/10
-- **Confidence**: High/Mixed
-- **Needs Verification**: K item(s)
+- **Posture score**: N/10
+- **Needs verification**: K
+- **Tools run**: [semgrep, trufflehog, ... / none installed]
 
 ### Findings
 
-#### [VULN-001] [Vulnerability Type] (Severity)
+#### [VULN-001] [Vulnerability class] (Severity)
 - **Location**: `file.py:123`
-- **Confidence**: High
-- **Issue**: [What the vulnerability is]
-- **Impact**: [What an attacker could do]
+- **Class**: CWE-89, OWASP A05:2025 Injection
+- **Refutation score**: 9/10
+- **Issue**: [what is wrong]
+- **Exploit scenario**: [who, which input, what happens]
 - **Evidence**:
   ```python
-  [Vulnerable code snippet]
+  [vulnerable code]
   ```
-- **Fix**: [How to remediate]
+- **Fix**: [the change, with code]
+- **Variants**: `other.py:45`, `third.py:78` (or "none found")
 
-### Needs Verification
+### Needs verification
 
-#### [VERIFY-001] [Potential Issue]
+#### [VERIFY-001] [Potential issue]
 - **Location**: `file.py:456`
-- **Question**: [What needs to be verified]
+- **Refutation score**: 6/10
+- **Question**: [what would settle it, and how to check]
+
+### Outside the diff
+- `old.py:12` — [one line] (diff mode only)
 ```
 
-If no vulnerabilities found, state: "No high-confidence vulnerabilities identified."
+No findings: write "No exploitable vulnerabilities found." and list what was
+reviewed and which tools ran, so the reader knows what the empty result covers.
 
 ---
 
-## Reference Files
+## Reference files
 
-### Core Vulnerabilities (`references/`)
+### Core vulnerabilities (`references/`)
+
 | File | Covers |
 |------|--------|
 | `injection.md` | SQL, NoSQL, OS command, LDAP, template injection |
@@ -320,24 +467,35 @@ If no vulnerabilities found, state: "No high-confidence vulnerabilities identifi
 | `authorization.md` | Authorization, IDOR, privilege escalation |
 | `authentication.md` | Sessions, credentials, password storage |
 | `cryptography.md` | Algorithms, key management, randomness |
-| `deserialization.md` | Pickle, YAML, Java, PHP deserialization |
+| `deserialization.md` | Pickle, YAML, Java, PHP deserialisation |
 | `file-security.md` | Path traversal, uploads, XXE |
 | `ssrf.md` | Server-side request forgery |
 | `csrf.md` | Cross-site request forgery |
 | `data-protection.md` | Secrets exposure, PII, logging |
 | `api-security.md` | REST, GraphQL, mass assignment |
 | `business-logic.md` | Race conditions, workflow bypass |
-| `modern-threats.md` | Prototype pollution, LLM injection, WebSocket |
+| `modern-threats.md` | Prototype pollution, LLM prompt injection, WebSocket |
+| `agentic.md` | Agent tools, MCP servers and clients, skills, hooks, plugins |
 | `misconfiguration.md` | Headers, CORS, debug mode, defaults |
 | `error-handling.md` | Fail-open, information disclosure |
 | `supply-chain.md` | Dependencies, build security |
 | `threat-modeling.md` | STRIDE, attack surface, CVE research, SBOM/CVSS triage, remediation plan |
 | `logging.md` | Audit failures, log injection |
 
-### Language Guides (`languages/`)
-- `python.md` - Django, Flask, FastAPI patterns
-- `javascript.md` - Node, Express, React, Vue, Next.js
+### Language guides (`languages/`)
+
+| File | Covers |
+|------|--------|
+| `python.md` | Django, Flask, FastAPI |
+| `javascript.md` | Node, Express, React, Vue, Next.js |
+| `php.md` | Laravel, Symfony, plain PHP |
 
 ### Infrastructure (`infrastructure/`)
-- `docker.md` - Container security
-- `cloud.md` - IAM, mTLS, secrets/Vault, vulnerability management, network, compliance
+
+| File | Covers |
+|------|--------|
+| `docker.md` | Container images and runtime |
+| `kubernetes.md` | Pod security, RBAC, secrets, ingress, Helm |
+| `terraform.md` | IAM, network exposure, state and secrets in HCL |
+| `ci-cd.md` | GitHub Actions, GitLab CI, Jenkins |
+| `cloud.md` | IAM, mTLS, secrets and Vault, network, compliance |

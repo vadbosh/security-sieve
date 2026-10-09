@@ -1,22 +1,23 @@
-The reference material in this skill is derived from the OWASP Cheat Sheet Series.
+security-sieve is distributed under two licenses, file by file.
 
-Source: https://cheatsheetseries.owasp.org/
-OWASP Foundation: https://owasp.org/
-
-Original content is licensed under:
+Apache License 2.0 — https://www.apache.org/licenses/LICENSE-2.0
+  SKILL.md, and every guide whose first line is
+  <!-- SPDX-License-Identifier: Apache-2.0 -->
+  SKILL.md is derived, with changes, from skills/security-review/SKILL.md
+  of getsentry/skills (https://github.com/getsentry/skills), which is
+  licensed under the Apache License 2.0.
 
 Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 https://creativecommons.org/licenses/by-sa/4.0/
+  Every other file in references/, languages/ and infrastructure/.
+  These files are copied unchanged from skills/security-review of
+  getsentry/skills. Their content is derived from the OWASP Cheat Sheet
+  Series (https://cheatsheetseries.owasp.org/), OWASP Foundation
+  (https://owasp.org/). The changes getsentry made, if any, are theirs;
+  security-sieve makes none — the repository's UPSTREAM file pins the
+  commit they were copied from and their checksums.
 
-You are free to:
-- Share — copy and redistribute the material in any medium or format
-- Adapt — remix, transform, and build upon the material for any purpose,
-  even commercially
-
-Under the following terms:
-- Attribution — You must give appropriate credit, provide a link to the
-  license, and indicate if changes were made.
-- ShareAlike — If you remix, transform, or build upon the material, you
-  must distribute your contributions under the same license as the original.
-
-Full license text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+  Under CC BY-SA 4.0 you may share and adapt these files for any purpose,
+  provided you give appropriate credit, link to the license, indicate any
+  changes, and distribute your adaptations under the same license.
+  Full text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
