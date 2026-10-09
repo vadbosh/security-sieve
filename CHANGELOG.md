@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.6 — 2026-10-09
+
+- **A switched session names the right model.** A Codex session opened on
+  GPT-6 and switched to GPT-5.6 kept both system instructions in its context;
+  the skill said "the review runs on GPT-6" while every turn ran on GPT-5.6.
+  Step 0 now takes the last model the context names, and says it is not
+  certain when it cannot tell.
+
 ## 1.3.5 — 2026-10-09
 
 - **Step 4 starts with an authorisation inventory** where objects have

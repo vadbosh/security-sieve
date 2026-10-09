@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.5"
+version: "1.3.6"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -71,6 +71,12 @@ for terse replies. In English:
 
 State the facts; do not rate yourself. The measurements behind this are in
 the README, not in the chat.
+
+A session can be switched to another model midway, and then the context
+names more than one ("based on GPT-6" first, "based on GPT-5" later). Take
+the **last** one: it is the model answering now. Not sure — say "model: not
+certain" rather than guess. The report's **Model** field follows the same
+rule.
 
 Then, before Step 1, ask the user three things **in one dialog**, with the
 assistant's structured question tool — `AskUserQuestion` in Claude Code,
