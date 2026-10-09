@@ -7,6 +7,9 @@ It works in two passes. First it collects candidates. Then it checks each
 candidate again, on its own, trying to prove it is not a vulnerability. Only
 vulnerabilities scored at least 8 of 10 go into the report.
 
+Tested on Linux, in the `bash:3.2` image and with PowerShell 7; macOS and
+Windows PowerShell 5.1 are untested.
+
 [Русская версия](README.RU.md) · [How it works](docs/guide.en.md)
 
 ## Install
