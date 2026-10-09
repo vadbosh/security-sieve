@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.2 — 2026-10-09
+
+- **Step 3 starts by listing the installed scanners** with `command -v`, and
+  the report's "Tools run" line is built from that list and the logs. Before,
+  a missing tool was found out only by a failed command, and a `pipx` install
+  in a `~/.local/bin` absent from the assistant's `PATH` looked the same as
+  no install at all.
+
 ## 1.4.1 — 2026-10-09
 
 - `docs/guide.en.md` and `docs/guide.ru.md` catch up with 1.3.2–1.4.0: the

@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.4.1"
+version: "1.4.2"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -220,6 +220,17 @@ A scanner finds what a reader misses on a large tree, and its output is
 reproducible. Run what is **already installed**; never install anything for
 the review. Every scanner hit is a **candidate** and goes through Steps 4–5
 like any other — most of their output is hardening advice, not an exploit.
+
+First list what is installed, by name on `PATH`, and run only those. The
+report's "Tools run" line is built from this list and the runs' logs, not
+from guesses; a tool installed in a directory missing from the assistant's
+`PATH` (`~/.local/bin` for `pipx`) shows up here as missing.
+
+```bash
+for t in trufflehog gitleaks jq semgrep osv-scanner trivy checkov; do
+    command -v "$t" >/dev/null 2>&1 && echo "$t ok" || echo "$t missing"
+done
+```
 
 Scanner output goes into a scratch directory **outside the repository**, and
 is read through the projection in the table, never raw:
