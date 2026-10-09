@@ -10,7 +10,10 @@ tell which three are real, so the report is worth less than one with the three
 alone. The skill therefore separates finding from judging:
 
 1. **Hunt.** Collect candidates. Each one names a location, the input, the sink
-   and what an attacker gains.
+   and what an attacker gains. Where objects have owners — users,
+   organisations, tenants — the hunt starts with an authorisation inventory:
+   every entry point that takes an object id, and whether the code ties that
+   id to the caller. An id with no tie is a candidate.
 2. **Refutation.** Check each candidate again, on its own, in a fresh context,
    with the goal of breaking it.
 
@@ -80,7 +83,8 @@ every clone still holds the commit. The fix is to rotate it first.
 The skill runs installed scanners only, and treats every hit as a candidate.
 Most scanner output is hardening advice, not an exploit.
 
-- Output goes to a temporary directory outside the repository.
+- Output goes to a temporary directory outside the repository, and the skill
+  deletes it once the report is written.
 - In Claude Code the scanners run in the background while the model reads the
   code. In Codex and Opencode they run one after another.
 - The skill reads a projection: rule, file, line, commit. `gitleaks` runs with
@@ -151,6 +155,12 @@ let Codex write to the default directory, add it to `~/.codex/config.toml`:
 [sandbox_workspace_write]
 writable_roots = ["/home/you/security-reviews"]
 ```
+
+Every report opens with a notice under its title. The report is the model's
+assessment, not a final verdict. A person checks each finding against the
+code and the deployment before acting on it. What the report does not mention
+was not proven safe. The notice is in every format and language, because a
+report is forwarded without this guide.
 
 Each finding has the file and line, the CWE, the OWASP Top 10:2025 category,
 an exploit scenario, the refutation score, the fix with code, and its

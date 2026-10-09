@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1 — 2026-10-09
+
+- `docs/guide.en.md` and `docs/guide.ru.md` catch up with 1.3.2–1.4.0: the
+  authorisation inventory at the start of the hunt, the assessment notice
+  that opens every report, and the scratch directory deleted after the report.
+
 ## 1.4.0 — 2026-10-09
 
 - **Every report opens with an assessment notice**, under the title, in every
