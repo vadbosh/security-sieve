@@ -81,6 +81,8 @@ The skill runs installed scanners only, and treats every hit as a candidate.
 Most scanner output is hardening advice, not an exploit.
 
 - Output goes to a temporary directory outside the repository.
+- In Claude Code the scanners run in the background while the model reads the
+  code. In Codex and Opencode they run one after another.
 - The skill reads a projection: rule, file, line, commit. `gitleaks` runs with
   `--redact`; `trufflehog`, which prints the secret in its `Raw` field, is read
   through `jq`, and skipped when `jq` is missing. Secret values never reach the
@@ -92,7 +94,9 @@ Most scanner output is hardening advice, not an exploit.
   scanning 0 commits.
 - `checkov` runs with `-o cli --compact`; its JSON was about seven times larger
   for the same findings.
-- `trivy` runs without its secret scanner, whose output carries the values.
+- `trivy` and `checkov` run without their secret scanners. `trivy` output
+  would carry the values, and `checkov` only repeats what `trufflehog` and
+  `gitleaks` find.
 - `semgrep` and `trivy` quote the matched source lines in their JSON; the skill
   reads both through a `jq` filter that drops those quotes, and skips them
   without `jq`.

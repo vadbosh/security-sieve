@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0 — 2026-10-09
+
+- **Scanners run in the background in Claude Code.** Step 3 starts them in one
+  background call right after Step 0, and the model reads code meanwhile. On a
+  .NET repository of 1890 commits the scanners took 61 s of a 465 s review;
+  the hunt took 155 s, so all of them now finish while the model reads. Codex
+  and Opencode still run them one after another.
+- **The refuter brief carries the secrets rules.** The `awk` line in Step 5
+  stopped at `## Severity` and left out "Secrets in code": git history,
+  liveness, severity by who can read the repository. A refuter checking a
+  secret worked without them.
+- **`checkov` runs with `--skip-framework secrets`.** Its secret checks repeated
+  the `trufflehog` and `gitleaks` hits; without them the run took 7 s instead
+  of 12 s on the same repository.
+- Not adopted: refuters on a faster model. Measured on the same four
+  candidates, Sonnet confirmed the same findings but took 57 s against 54 s
+  for the slowest refuter, so the review did not get faster.
+
 ## 1.1.1 — 2026-10-09
 
 - **`references/injection.md` line 235 works in GNU grep.** The upstream pattern

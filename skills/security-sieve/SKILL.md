@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.1.1"
+version: "1.2.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -181,6 +181,15 @@ between calls. Write the printed path literally into every later command
 reviews running on one machine overwrite each other's, and one reads the
 other's scanner output. Measured: two parallel runs did exactly that.
 
+**Run the scanners in the background where the assistant can.** They need
+no input from the review, and the model reads code meanwhile. In Claude Code,
+right after Step 0, start every scanner line below in **one** Bash call with
+`run_in_background`, joined with `;`, with `out=…` set at its start; go on
+with Steps 1, 2 and 4; read the projections when the call finishes. Where
+there is no background run (Codex, Opencode), run them here, in order.
+Measured on a .NET repository of 1890 commits: 61 s of scanners, hidden
+behind the hunt.
+
 ```bash
 # Secrets — trufflehog: history, then the working tree. The working tree skips
 # .git and third-party trees; history keeps them, an old bin/ may hold a key.
@@ -209,7 +218,7 @@ jq -c '.[] | select(.File == "<file>") | {RuleID, File, StartLine, Commit}' "$ou
 semgrep scan --config p/default --metrics=off --json <path> > "$out/semgrep.json"
 osv-scanner scan source -r --format json . > "$out/osv.json"
 trivy fs --scanners vuln,misconfig --format json . > "$out/trivy.json"
-checkov -d . --compact --quiet -o cli > "$out/checkov.txt"
+checkov -d . --compact --quiet -o cli --skip-framework secrets > "$out/checkov.txt"
 ```
 
 | Tool | Finds |
@@ -245,8 +254,9 @@ Rules for these runs:
   that name a rule, a file and a line. `checkov` runs with
   `-o cli --compact`: its JSON is about seven times larger for the same
   findings.
-- `trivy` runs without its secret scanner: secrets are the job of the two
-  tools above, and its output would carry the values.
+- `trivy` and `checkov` run without their secret scanners: secrets are the
+  job of the two tools above. `trivy` output would carry the values;
+  `checkov` only repeats their hits and takes longer.
 - **A non-zero exit means findings, not a failure.** `gitleaks` exits 1 when it
   finds a leak. Run the commands one by one or joined with `;`, never with
   `&&` or under `set -e`, and judge a run by its output file, not its status.
@@ -319,7 +329,9 @@ full text, not as references to "the sections above":
 
 1. the candidate: location, class, source, sink, claimed gain;
 2. this step, Step 5, as written;
-3. the whole "Do not flag" section, with exclusions and precedents;
+3. the whole "Do not flag" section, with exclusions and precedents, and the
+   "Secrets in code" rules — git history, liveness, severity by who can read
+   the repository;
 4. the guides loaded for this code in Step 2, or their file paths so it can
    read them;
 5. what to return: the one-sentence claim, the exploit scenario, the score,
@@ -329,7 +341,8 @@ Items 2 and 3 can be a file instead of pasted text, as long as it holds them
 verbatim. Write it once per review and pass the path to every refuter:
 
 ```bash
-awk '/^### 5\. Refute every candidate/,/^### 6\./; /^## Do not flag/,/^## Severity/' \
+awk '/^### 5\. Refute every candidate/,/^### 6\./; /^## Do not flag/,/^## Severity/;
+     /^### Secrets in code/,/^### Check the context first/' \
     "<skill-dir>/SKILL.md" > "$out/refuter-brief.md"
 ```
 
