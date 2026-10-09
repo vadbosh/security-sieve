@@ -136,7 +136,9 @@ Two of these talk to the network. `semgrep` downloads its registry rules.
 provider's API to test it — ask the user before turning verification on.
 
 Each tool's flags change between versions; on an error, read its `--help`
-instead of guessing.
+instead of guessing. A tool that is missing, or still fails after that, is
+skipped: the review goes on without it, and the report's "Tools run" line
+names only the tools that produced output.
 
 ### 4. Hunt for candidates
 

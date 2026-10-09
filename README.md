@@ -71,19 +71,40 @@ Environment variables and CLI flags count as trusted input.
 SKILL.md lists every exclusion and precedent, so you can see why a candidate
 was dropped.
 
-## Tool evidence
+## What it needs
 
-The skill uses scanners that are already installed: `semgrep`, `trufflehog`,
-`gitleaks`, `osv-scanner`, `trivy`, `checkov`. It never installs one. A scanner
-hit is a candidate like any other and goes through the refutation pass: most
-scanner output is hardening advice, not an exploit.
+Only the assistant is required. Everything else adds coverage, and the skill
+works without it.
 
-Two of these tools use the network:
+| Tool | Required | Used for | If it is missing |
+|---|---|---|---|
+| Claude Code, Codex or Opencode | yes | runs the skill | — |
+| `git` | for diff mode | finding the merge base and the diff | Diff mode is not available. Code mode still works on files and directories |
 
-- `semgrep` downloads its rules from the Semgrep registry;
-- `trufflehog` can send each key it finds to the provider to test it. The skill
-  runs it with `--no-verification` and asks you before it turns verification
-  on.
+The scanners are all optional. The skill runs the ones already on `PATH`, with
+the command shown, and never installs one:
+
+| Scanner | Command the skill runs | Adds | If it is missing |
+|---|---|---|---|
+| [`semgrep`](https://semgrep.dev/docs/getting-started/) | `semgrep scan --config p/default --metrics=off --json <path>` | pattern matches across many languages | The model reads the code from the entry points itself; on a large tree it may miss a sink far from them |
+| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | `trufflehog git file://. --no-verification --json` | secrets in the files and in the whole git history | Secrets are found only in the files the model reads. A key deleted in an old commit is not seen |
+| [`gitleaks`](https://github.com/gitleaks/gitleaks) | `gitleaks git --no-banner --report-format json --report-path - .` | the same as `trufflehog`, with other rules | Same as above. One of the two is enough |
+| [`osv-scanner`](https://google.github.io/osv-scanner/) | `osv-scanner scan source -r --format json .` | known-vulnerable dependency versions from lockfiles | Dependency CVEs are not listed. In code mode they are excluded anyway unless a vulnerable call is reachable; threat-model mode loses its dependency list |
+| [`trivy`](https://trivy.dev/) | `trivy fs --scanners vuln,secret,misconfig --format json .` | dependencies, secrets and IaC misconfiguration in one run | Covered in part by the others; without any of them, IaC is reviewed from the guides alone |
+| [`checkov`](https://www.checkov.io/) | `checkov -d . --compact --quiet -o json` | policy checks for Terraform, Kubernetes, Dockerfiles and CI | Terraform and Kubernetes are reviewed from the guides alone |
+
+The report always says which scanners ran, so you know what an empty result
+covers.
+
+A scanner hit is a candidate like any other and goes through the refutation
+pass: most scanner output is hardening advice, not an exploit.
+
+Two scanners use the network:
+
+- `semgrep` downloads its rules from the Semgrep registry. Without network
+  access it cannot get them, and the skill goes on without it;
+- `trufflehog` without `--no-verification` sends each key it finds to the
+  provider to test it. The skill asks you before it turns verification on.
 
 ## Each finding carries
 
