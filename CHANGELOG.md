@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.2 — 2026-10-09
+
+- **Refuters run on the session's model in Claude Code.** With
+  `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` in the settings, every refuter of an
+  Opus review ran on Sonnet without anyone choosing it, and Sonnet's
+  safeguards stopped one of them halfway. Step 5 now sets `model` on each
+  refuter to the session's own model — an explicit parameter wins over the
+  configured default — and says what to do when a refuter still fails.
+
 ## 1.5.1 — 2026-10-09
 
 - **The scanner status lines reach the chat.** `scan.sh` printed which tools

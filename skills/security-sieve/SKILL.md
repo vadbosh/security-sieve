@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.5.1"
+version: "1.5.2"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -386,7 +386,13 @@ This is the step that makes the report trustworthy. Each candidate is checked
 **on its own, in a fresh context**:
 
 - where the assistant can start subagents (Claude Code `Agent`, Codex and
-  Opencode subagents), start one per candidate — at most **5 at a time**;
+  Opencode subagents), start one per candidate — at most **5 at a time**.
+  In Claude Code give each one `model` set to the session's own model
+  (`"opus"` in an Opus session). Without it a configured default —
+  `CLAUDE_CODE_SUBAGENT_MODEL` — silently runs every refuter on another
+  model: measured, a whole review's refuters ran on Sonnet while the session
+  ran on Opus, and Sonnet's safeguards stopped one of them halfway. If a
+  refuter still fails, re-check that candidate yourself and say so;
 - otherwise take them one at a time, and re-read the code for each one
   instead of relying on what you concluded during the hunt.
 
