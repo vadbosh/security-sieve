@@ -25,9 +25,9 @@ alone. The skill therefore separates finding from judging:
 
 ## The refutation pass
 
-Where the assistant can start subagents, each candidate gets its own, at most
-five at a time. A subagent sees only what it is given, so it gets, in full
-text:
+Where the assistant can start subagents, each candidate gets a subagent of its
+own, at most five at a time. A subagent sees only what it is given, so it
+gets, in full text:
 
 - the candidate;
 - the refutation step;
@@ -45,12 +45,12 @@ candidates one at a time and re-reads the code for each.
 | 5–7 | "Needs verification", with the question that would settle it |
 | 1–4 | Dropped, not mentioned |
 
-A confirmed finding is then searched for across the repository; each variant
-goes through the same refutation.
+For each confirmed finding the skill then searches the repository for the same
+pattern; every match goes through the same refutation.
 
 ## What it does not report
 
-These classes are excluded outright, whatever their severity would be:
+The following classes are excluded outright, whatever their severity would be:
 
 - denial of service, resource exhaustion, missing rate limits, regex DoS — in
   every mode; a threat model may list availability threats as design notes;
@@ -113,8 +113,9 @@ bash shell)".
 
 Each finding has the file and line, the CWE, the OWASP Top 10:2025 category,
 an exploit scenario, the refutation score, the fix with code, and its
-variants. The summary lists the tools that ran, and says whether git history
-and uncommitted files were scanned for secrets.
+variants — the same pattern elsewhere in the repository. The summary lists the
+tools that ran, and says whether git history and uncommitted files were scanned
+for secrets.
 
 The posture score is a formula, so the same findings always give the same
 score:
@@ -128,7 +129,8 @@ Needs-verification items and findings outside the diff do not count.
 
 ## Install details
 
-- The installers write only into assistants that are already present:
+- The installers write only into the skills directories of assistants that are
+  already installed:
   `~/.claude/skills`, `~/.config/opencode/skills`, `~/.codex/skills` (the same
   paths under your profile on Windows). `--skills-dir <path>` /
   `-SkillsDir <path>` installs elsewhere; an empty value is refused.
@@ -170,7 +172,7 @@ under which license; `NOTICE` gives the attributions.
 
 `UPSTREAM` pins the commit the copies came from and their checksums.
 `./release.sh verify` fails if a copy changes; `./release.sh upstream` reports
-when Sentry moves.
+whether Sentry has new commits.
 
 ## Contributing
 

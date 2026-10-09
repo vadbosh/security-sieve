@@ -28,9 +28,9 @@ Windows:
 .\install.ps1
 ```
 
-The installer copies the skill into every assistant it finds: `~/.claude`,
-`~/.config/opencode`, `~/.codex`. `--dry-run` / `-DryRun` shows what it would
-write.
+The installer copies the skill into the skills directory of every assistant it
+finds: `~/.claude`, `~/.config/opencode`, `~/.codex`. `--dry-run` / `-DryRun`
+shows what it would write.
 
 Run it in the assistant:
 
@@ -47,9 +47,9 @@ see the dependency table. The skill runs what is installed, installs nothing,
 and the report says what ran.
 
 > [!IMPORTANT]
-> **Install `trufflehog`, `gitleaks` and `jq`.** Only the two scanners let the
-> review see git history: a key deleted three commits ago is still in every
-> clone. Without them the report says "Secrets in git history: NOT scanned".
+> **Install `trufflehog`, `gitleaks` and `jq`.** Only `trufflehog` and `gitleaks`
+> let the review see git history: a key deleted three commits ago is still in
+> every clone. Without them the report says "Secrets in git history: NOT scanned".
 > `jq` keeps secret values out of the model's view; without it `trufflehog`,
 > `semgrep` and `trivy` are skipped.
 >
@@ -67,11 +67,11 @@ and the report says what ran.
 | `git` | for diff mode | the merge base, the branch diff, untracked files | No diff mode; files and directories are still reviewed |
 | `bash` | for scanners | runs the scanner commands. On Windows: Git Bash | **Basic review**: the model reads the code, no scanner runs. The installer and the report say so |
 | [`jq`](https://jqlang.org/download/) | strongly recommended | reads the output of `trufflehog`, `semgrep` and `trivy` without secret values and quoted source lines | `trufflehog`, `semgrep` and `trivy` are skipped; `gitleaks`, `osv-scanner` and `checkov` still run |
-| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | strongly recommended | secrets in every commit and in files not committed yet | A secret is found only if it is in a file the model reads |
-| [`gitleaks`](https://github.com/gitleaks/gitleaks) | strongly recommended | the same, with other rules; values masked by `--redact` | Same as above. One of the two already covers git history |
-| [`semgrep`](https://semgrep.dev/docs/getting-started/) | optional | code patterns in many languages. Downloads its rules from the Semgrep registry | The model follows the code from the entry points; on a large tree it may miss a far sink |
+| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | strongly recommended | secrets in every commit and in files not committed yet | If `gitleaks` is missing too, a secret is found only when it is in a file the model reads |
+| [`gitleaks`](https://github.com/gitleaks/gitleaks) | strongly recommended | the same, with other rules; values masked by `--redact` | If `trufflehog` is missing too, a secret is found only when it is in a file the model reads. Either one alone covers git history |
+| [`semgrep`](https://semgrep.dev/docs/getting-started/) | optional | code patterns in many languages. Downloads its rules from the Semgrep registry | The model follows the code from the entry points; on a large tree it may miss a sink far from them |
 | [`osv-scanner`](https://google.github.io/osv-scanner/) | optional | known-vulnerable dependency versions from lockfiles | No dependency CVE list in threat-model mode. Code mode reports a CVE only when the vulnerable call is reachable anyway |
-| [`trivy`](https://trivy.dev/) | optional | dependencies and IaC misconfiguration | Partly covered by the others |
+| [`trivy`](https://trivy.dev/) | optional | dependencies and IaC misconfiguration | Dependencies are left to `osv-scanner`, IaC to `checkov` |
 | [`checkov`](https://www.checkov.io/) | optional | policy checks for Terraform, Kubernetes, Dockerfiles, CI | Terraform and Kubernetes are reviewed from the guides alone |
 
 Secret values never reach the model: the skill masks the output of the secret
@@ -83,7 +83,7 @@ redaction tool on your machine.
 | Area | What it looks for | Guide in `skills/security-sieve/` (`references/` unless named) |
 |---|---|---|
 | Injection | SQL, NoSQL, OS command, LDAP, template injection | `injection.md` |
-| Web output | Reflected, stored and DOM XSS; CSRF | `xss.md`, `csrf.md` |
+| Browser output | Reflected, stored and DOM XSS; CSRF | `xss.md`, `csrf.md` |
 | Access | Authorization, IDOR, privilege escalation; sessions, password storage | `authorization.md`, `authentication.md` |
 | Data | Weak crypto and randomness, secrets exposure, PII, deserialisation | `cryptography.md`, `data-protection.md`, `deserialization.md` |
 | Files and requests | Path traversal, uploads, XXE; SSRF | `file-security.md`, `ssrf.md` |
@@ -97,13 +97,14 @@ redaction tool on your machine.
 | PHP | Laravel, Symfony, plain PHP | `languages/php.md` |
 | Containers | Dockerfile and runtime | `infrastructure/docker.md` |
 | Kubernetes, Helm | Pod security, RBAC, secrets, ingress, charts | `infrastructure/kubernetes.md` |
-| Terraform | IAM, network exposure, state and secrets in HCL | `infrastructure/terraform.md` |
+| Terraform | IAM, ports and services open to the internet, state and secrets in HCL | `infrastructure/terraform.md` |
 | CI/CD | GitHub Actions, GitLab CI, Jenkins | `infrastructure/ci-cd.md` |
 | Cloud | IAM policies, secrets managers and Vault, service TLS | `infrastructure/cloud.md` |
 | Threat model | STRIDE, attack surface, CVE and dependency triage | `threat-modeling.md` |
 
 Each finding has its file and line, CWE, OWASP Top 10:2025 category, exploit
-scenario, refutation score, fix and variants. What the skill deliberately does
+scenario, refutation score, fix and variants — the same pattern elsewhere in the
+repository. What the skill deliberately does
 not report — denial of service, missing hardening, theoretical races — is in
 [the guide](docs/guide.en.md#what-it-does-not-report).
 
