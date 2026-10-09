@@ -1,7 +1,27 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — 2026-10-09
 
+- **A C# / ASP.NET Core guide**, `languages/csharp.md`: object-level
+  authorization (a class-level `[Authorize]` only authenticates), caller-supplied
+  tenant ids, anonymous token endpoints, ADO.NET / EF Core / Dapper injection,
+  deserialisation, XML, `Path.Combine`, redirects, Razor and Blazor output, JWT
+  validation, secrets in `appsettings*.json` and publish profiles.
+- **Lessons from the first two real reviews** (an ASP.NET Core API, a Terraform
+  EKS repository):
+  - A secret's severity follows who can read the repository, in its files and
+    its history alike: Critical when public or shared, High when private. The
+    severity table said "a live production secret in code" is Critical and
+    contradicted it.
+  - Step 3 groups scanner hits by detector and file first (one repeated
+    connection string gave 1,500 lines), skips `.terraform/`, `node_modules/`,
+    `vendor/`, `bin/`, `obj/` in the working tree but not in history, keeps
+    stderr out of the results, and says a non-zero exit means findings.
+  - JWT hits are triaged by their `exp` claim, read without printing the token.
+  - The refuter brief (Step 5 and "Do not flag") can be passed as a file.
+  - Variants that differ only by place may be listed without their own
+    refuter.
+  - The report has a "Not assessable from the repository" section.
 - **Step 0: the skill asks where the report goes, in which format and
   language** — one dialog: `~/security-reviews/<repo>-<date>`, a path or chat
   only; `md`, `txt` or one self-contained `html`; the session's language or

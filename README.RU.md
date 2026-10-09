@@ -101,6 +101,7 @@ Windows:
 | Python | Django, Flask, FastAPI | `languages/python.md` |
 | JavaScript, TypeScript | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
 | PHP | Laravel, Symfony, чистый PHP | `languages/php.md` |
+| C# | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
 | Контейнеры | Dockerfile и запуск | `infrastructure/docker.md` |
 | Kubernetes, Helm | Безопасность подов, RBAC, секреты, ingress, чарты | `infrastructure/kubernetes.md` |
 | Terraform | IAM, открытые наружу порты и сервисы, state и секреты в HCL | `infrastructure/terraform.md` |

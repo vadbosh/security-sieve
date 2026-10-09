@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.0.1"
+version: "1.1.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -147,6 +147,7 @@ Then the language and the infrastructure:
 | `.py`, `django`, `flask`, `fastapi` | `languages/python.md` |
 | `.js`, `.ts`, `express`, `react`, `vue`, `next` | `languages/javascript.md` |
 | `.php`, `laravel`, `symfony`, `composer.json` | `languages/php.md` |
+| `.cs`, `.csproj`, `.sln`, `asp.net`, `Microsoft.AspNetCore` | `languages/csharp.md` |
 | `Dockerfile`, `.dockerignore`, compose files | `infrastructure/docker.md` |
 | Kubernetes manifests, Helm charts and values | `infrastructure/kubernetes.md` |
 | `.tf`, `.tfvars`, OpenTofu, Terragrunt | `infrastructure/terraform.md` |
@@ -181,16 +182,28 @@ reviews running on one machine overwrite each other's, and one reads the
 other's scanner output. Measured: two parallel runs did exactly that.
 
 ```bash
-# Secrets — trufflehog: history, then the working tree (.git itself excluded)
-trufflehog git file://. --no-verification --json > "$out/th-git.ndjson"
+# Secrets — trufflehog: history, then the working tree. The working tree skips
+# .git and third-party trees; history keeps them, an old bin/ may hold a key.
+# stderr is progress logging, not results.
+trufflehog git file://. --no-verification --json > "$out/th-git.ndjson" 2>"$out/th-git.log"
 trufflehog filesystem . --no-verification --json \
-    -x <(printf '%s\n' '(^|/)\.git/') > "$out/th-fs.ndjson"
-jq -c "$TH" "$out/th-git.ndjson" "$out/th-fs.ndjson"
+    -x <(printf '%s\n' '(^|/)\.git/' '(^|/)(\.terraform|node_modules|vendor|bin|obj)/') \
+    > "$out/th-fs.ndjson" 2>"$out/th-fs.log"
+# One line per detector and file first; a repeated value can give 1,500 lines.
+jq -c "$TH" "$out/th-git.ndjson" "$out/th-fs.ndjson" | jq -s -c 'group_by(.detector, .where.file)
+  | map({detector: .[0].detector, file: .[0].where.file, hits: length,
+         commits: ([.[].where.commit | select(. != null)] | unique | length)}) | .[]'
 
 # Secrets — gitleaks: history, then the working tree; --redact masks values
-gitleaks git --no-banner --redact --report-format json --report-path - . > "$out/gl-git.json"
-gitleaks dir --no-banner --redact --report-format json --report-path - . > "$out/gl-dir.json"
-jq -c '.[] | {RuleID, File, StartLine, Commit}' "$out/gl-git.json" "$out/gl-dir.json"
+gitleaks git --no-banner --redact --report-format json --report-path - . > "$out/gl-git.json" 2>"$out/gl-git.log"
+gitleaks dir --no-banner --redact --report-format json --report-path - . > "$out/gl-dir.json" 2>"$out/gl-dir.log"
+jq -s -c 'add | map(select(.File | test("(^|/)(\\.terraform|node_modules|vendor|bin|obj)/") | not))
+  | group_by(.RuleID, .File) | map({rule: .[0].RuleID, file: .[0].File, hits: length}) | .[]' \
+  "$out/gl-dir.json"
+jq -c 'group_by(.RuleID, .File) | map({rule: .[0].RuleID, file: .[0].File, hits: length,
+         commits: ([.[].Commit] | unique | length)}) | .[]' "$out/gl-git.json"
+# Then the detail for a file worth a look:
+jq -c '.[] | select(.File == "<file>") | {RuleID, File, StartLine, Commit}' "$out/gl-git.json"
 
 # Code, dependencies, infrastructure
 semgrep scan --config p/default --metrics=off --json <path> > "$out/semgrep.json"
@@ -234,6 +247,16 @@ Rules for these runs:
   findings.
 - `trivy` runs without its secret scanner: secrets are the job of the two
   tools above, and its output would carry the values.
+- **A non-zero exit means findings, not a failure.** `gitleaks` exits 1 when it
+  finds a leak. Run the commands one by one or joined with `;`, never with
+  `&&` or under `set -e`, and judge a run by its output file, not its status.
+- **A JWT hit is checked by its expiry.** Read only the payload's `exp` — the
+  token never reaches the screen:
+  `jq -c 'select(.DetectorName == "JWT") | {file: .SourceMetadata.Data[].file, line: .SourceMetadata.Data[].line, exp: (.Raw | split(".")[1] | gsub("-"; "+") | gsub("_"; "/") | @base64d | fromjson | .exp | todate)}' "$out/th-git.ndjson"`.
+  An expired token is dropped; the key that signed it is a finding of its own
+  if it is in the repository.
+- A host's own redaction hook may mask ordinary code in tool output. If a
+  decision depends on a masked line, read that line again from the file.
 
 **No bash, no scanners.** The commands above are bash. On Windows they run in
 Git Bash; where the assistant has only PowerShell, skip this step and write
@@ -302,6 +325,14 @@ full text, not as references to "the sections above":
 5. what to return: the one-sentence claim, the exploit scenario, the score,
    and the exclusion that applies if any.
 
+Items 2 and 3 can be a file instead of pasted text, as long as it holds them
+verbatim. Write it once per review and pass the path to every refuter:
+
+```bash
+awk '/^### 5\. Refute every candidate/,/^### 6\./; /^## Do not flag/,/^## Severity/' \
+    "<skill-dir>/SKILL.md" > "$out/refuter-brief.md"
+```
+
 Not the other candidates: a refuter that sees them starts comparing instead of
 checking.
 
@@ -341,6 +372,12 @@ A confirmed finding is evidence of a habit. Search the repository for the same
 pattern — the same sink, the same missing check, the same helper used
 elsewhere — and send every variant through Step 5. Report variants under the
 original finding with their locations; do not repeat the explanation.
+
+A variant that differs from the confirmed finding only by place — the same
+missing check, the same credential, the same unsafe helper — may be listed
+without its own refuter: the refutation of the original covers it. A variant
+with its own source, sink or guard (another input, a check that might apply,
+a different framework path) goes through Step 5 like any candidate.
 
 ### 7. Report
 
@@ -465,8 +502,8 @@ Severity is set after refutation, for findings only.
 
 | Severity | Impact | Examples |
 |----------|--------|----------|
-| **Critical** | Direct exploit, severe impact, no authentication needed | RCE, SQL injection reaching data, authentication bypass, a live production secret in code |
-| **High** | Exploitable under conditions, significant impact | Stored XSS, SSRF to cloud metadata, IDOR on sensitive data, CI injection from a fork PR |
+| **Critical** | Direct exploit, severe impact, no authentication needed | RCE, SQL injection reaching data, authentication bypass, a live production secret readable beyond its owners (public or shared repository) |
+| **High** | Exploitable under conditions, significant impact | Stored XSS, SSRF to cloud metadata, IDOR on sensitive data, CI injection from a fork PR, a live production secret in a private repository |
 | **Medium** | Specific conditions, moderate impact | Reflected XSS, CSRF on a state-changing action, path traversal limited to readable files |
 | **Low** | Exploitable, minimal impact | Open redirect proven reachable, disclosure of internal hostnames |
 
@@ -509,7 +546,8 @@ AWS_SECRET_ACCESS_KEY = <string literal>
 private_key = <PEM block>
 ```
 Confirm it is a real credential, not a placeholder, a test fixture or a public
-key. A live production secret is Critical whatever else the report contains.
+key. A live production secret is Critical or High by the rule below, whatever
+else the report contains.
 
 **A secret in git history is a finding even when HEAD no longer has it.**
 Deleting the line in a later commit revokes nothing: every clone, fork and
@@ -520,9 +558,10 @@ cache still holds the commit. Three rules for the refutation pass:
 - "Liveness is not verified" does not lower the score either. The scanners run
   without verification, so treat the secret as live until the user confirms it
   is revoked.
-- Severity follows who can read the history: Critical for a production
-  credential in a public repository or one shared beyond the key's owners;
-  High in a private repository.
+- Severity follows who can read the repository — its current files and its
+  history alike: Critical for a production credential in a public repository
+  or one shared beyond the key's owners; High in a private repository only
+  they can clone. This rule decides; the severity table follows it.
 
 The fix is always **rotate or revoke first**. Rewriting history afterwards is
 optional and does not replace rotation.
@@ -620,10 +659,19 @@ The score is for triage at a glance. It is not CVSS.
 
 ### Outside the diff
 - `old.py:12` — [one line] (diff mode only)
+
+### Not assessable from the repository
+- [what depends on configuration kept elsewhere — a security group created
+  outside, an IAM policy in another repository, a cloud setting — and the
+  question that would settle it]
 ```
 
 No findings: write "No exploitable vulnerabilities found." and list what was
 reviewed and which tools ran, so the reader knows what the empty result covers.
+
+List under "Not assessable" what the verdict depends on but the repository does
+not contain. It is not a finding and does not count toward the score; it tells
+the reader where the review stopped.
 
 ### Formats and language
 
@@ -682,6 +730,7 @@ file, line, commit, detector — never its value, not even part of it.
 | `python.md` | Django, Flask, FastAPI |
 | `javascript.md` | Node, Express, React, Vue, Next.js |
 | `php.md` | Laravel, Symfony, plain PHP |
+| `csharp.md` | ASP.NET Core, ADO.NET, EF Core, Dapper |
 
 ### Infrastructure (`infrastructure/`)
 

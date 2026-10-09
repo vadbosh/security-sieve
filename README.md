@@ -102,6 +102,7 @@ redaction tool on your machine.
 | Python | Django, Flask, FastAPI | `languages/python.md` |
 | JavaScript, TypeScript | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
 | PHP | Laravel, Symfony, plain PHP | `languages/php.md` |
+| C# | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
 | Containers | Dockerfile and runtime | `infrastructure/docker.md` |
 | Kubernetes, Helm | Pod security, RBAC, secrets, ingress, charts | `infrastructure/kubernetes.md` |
 | Terraform | IAM, ports and services open to the internet, state and secrets in HCL | `infrastructure/terraform.md` |
