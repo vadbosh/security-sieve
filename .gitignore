@@ -1,0 +1,18 @@
+# Timestamped copies left by install.sh and by anyone editing a live file.
+# Recoverable from history by definition, and untracked they hide the one thing
+# `git status` is for — a change nobody meant to make.
+*.bak.*
+
+# Paths that belong to this machine, read by release.sh — a mirror of the skill
+# that install.sh does not write to. Never in a public repository.
+.release.local
+
+# Findings from a cold review — `review-YYYY-MM-DD-<object>.md`, written by this
+# skill. A work order for whoever fixes the items, true on its date and
+# meaningless after they land; what it produced belongs in CHANGELOG.md and in
+# the notes, which is where a reader looks.
+review-*.md
+
+# Session memory written by the assistant tooling. Local, and none of a
+# public repository's business.
+.memsearch/
