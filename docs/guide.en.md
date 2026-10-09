@@ -81,7 +81,10 @@ every clone still holds the commit. The fix is to rotate it first.
 ## How the scanners run
 
 The skill runs installed scanners only, and treats every hit as a candidate.
-Most scanner output is hardening advice, not an exploit.
+Most scanner output is hardening advice, not an exploit. The scanners are run
+by `scripts/scan.sh`, not by the model command by command: the script finds
+every installed tool, runs each one every time, and prints only grouped
+results without secret values.
 
 - Output goes to a temporary directory outside the repository, and the skill
   deletes it once the report is written.

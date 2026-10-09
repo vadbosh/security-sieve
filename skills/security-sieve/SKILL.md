@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.4.2"
+version: "1.5.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -221,75 +221,44 @@ reproducible. Run what is **already installed**; never install anything for
 the review. Every scanner hit is a **candidate** and goes through Steps 4–5
 like any other — most of their output is hardening advice, not an exploit.
 
-First list what is installed, by name on `PATH`, and run only those. The
-report's "Tools run" line is built from this list and the runs' logs, not
-from guesses; a tool installed in a directory missing from the assistant's
-`PATH` (`~/.local/bin` for `pipx`) shows up here as missing.
+**Run the scanners with the script that ships with this skill**, not by hand.
+It lists the installed tools, runs every one of them — every time, which a
+rule in prose did not guarantee — and prints projections without secret
+values: the tool list, one status line per run, and findings grouped by
+detector or rule, file, line and commit. Raw output stays in the scratch
+directory **outside the repository**.
 
 ```bash
-for t in trufflehog gitleaks jq semgrep osv-scanner trivy checkov; do
-    command -v "$t" >/dev/null 2>&1 && echo "$t ok" || echo "$t missing"
-done
+bash "<skill-dir>/scripts/scan.sh" "<repo-dir>"    # prints out=<scratch dir> first
 ```
 
-Scanner output goes into a scratch directory **outside the repository**, and
-is read through the projection in the table, never raw:
+- `tool <name> missing` — not on the assistant's `PATH` (`~/.local/bin` for
+  `pipx` included); the report's "Tools run" line is built from this list.
+- `ran <name> rc=… log-errors=N` — a non-zero `rc` is findings for most of
+  these tools; `log-errors` above 0 means the run failed: name it as failed.
+- `skip <name>: jq not installed` — its output would carry values or source.
+
+**Run it in the background where the assistant can.** It needs no input from
+the review, and the model reads code meanwhile. In Claude Code start it right
+after Step 0 with `run_in_background`, go on with Steps 1, 2 and 4, and read
+its output when it finishes. Where there is no background run (Codex,
+Opencode), run it here. Measured on a .NET repository of 1890 commits: 61 s of
+scanners, hidden behind the hunt.
+
+Note the printed `out=` path and write it literally into any later command;
+each tool call may start a new shell. **Never pass the path through a fixed
+file** such as `/tmp/out_path`: two reviews on one machine overwrite each
+other's, and one reads the other's scanner output — measured. Detail for a
+file worth a look, still without values:
 
 ```bash
-out=$(mktemp -d "${TMPDIR:-/tmp}/security-sieve.$(basename "$PWD").XXXXXX")
-echo "$out"             # note the path; Step 7 deletes it
-TH='{detector: .DetectorName, verified: .Verified,
-     where: (.SourceMetadata.Data | to_entries[0].value | {file, line, commit})}'
-```
-
-Each tool call may start a new shell, so `$out` and `$TH` do not survive
-between calls. Write the printed path literally into every later command
-(`out=/tmp/security-sieve.api.Ab12Cd; …`) and set `TH` again where it is used.
-**Never pass the path through a fixed file** such as `/tmp/out_path`: two
-reviews running on one machine overwrite each other's, and one reads the
-other's scanner output. Measured: two parallel runs did exactly that.
-
-**Run the scanners in the background where the assistant can.** They need
-no input from the review, and the model reads code meanwhile. In Claude Code,
-right after Step 0, start every scanner line below in **one** Bash call with
-`run_in_background`, joined with `;`, with `out=…` set at its start; go on
-with Steps 1, 2 and 4; read the projections when the call finishes. Where
-there is no background run (Codex, Opencode), run them here, in order.
-Measured on a .NET repository of 1890 commits: 61 s of scanners, hidden
-behind the hunt.
-
-```bash
-# Secrets — trufflehog: history, then the working tree. The working tree skips
-# .git and third-party trees; history keeps them, an old bin/ may hold a key.
-# stderr is progress logging, not results. --no-update: trufflehog otherwise
-# tries to replace its own binary first, and in a sandbox it then exits
-# having scanned nothing ("cannot move binary").
-trufflehog git file://. --no-verification --no-update --json > "$out/th-git.ndjson" 2>"$out/th-git.log"
-trufflehog filesystem . --no-verification --no-update --json \
-    -x <(printf '%s\n' '(^|/)\.git/' '(^|/)(\.terraform|node_modules|vendor|bin|obj)/') \
-    > "$out/th-fs.ndjson" 2>"$out/th-fs.log"
-# One line per detector and file first; a repeated value can give 1,500 lines.
-jq -c "$TH" "$out/th-git.ndjson" "$out/th-fs.ndjson" | jq -s -c 'group_by(.detector, .where.file)
-  | map({detector: .[0].detector, file: .[0].where.file, hits: length,
-         commits: ([.[].where.commit | select(. != null)] | unique | length)}) | .[]'
-
-# Secrets — gitleaks: history, then the working tree; --redact masks values
-gitleaks git --no-banner --redact --report-format json --report-path - . > "$out/gl-git.json" 2>"$out/gl-git.log"
-gitleaks dir --no-banner --redact --report-format json --report-path - . > "$out/gl-dir.json" 2>"$out/gl-dir.log"
-jq -s -c 'add | map(select(.File | test("(^|/)(\\.terraform|node_modules|vendor|bin|obj)/") | not))
-  | group_by(.RuleID, .File) | map({rule: .[0].RuleID, file: .[0].File, hits: length}) | .[]' \
-  "$out/gl-dir.json"
-jq -c 'group_by(.RuleID, .File) | map({rule: .[0].RuleID, file: .[0].File, hits: length,
-         commits: ([.[].Commit] | unique | length)}) | .[]' "$out/gl-git.json"
-# Then the detail for a file worth a look:
+out=<scratch dir>
 jq -c '.[] | select(.File == "<file>") | {RuleID, File, StartLine, Commit}' "$out/gl-git.json"
-
-# Code, dependencies, infrastructure
-semgrep scan --config p/default --metrics=off --json <path> > "$out/semgrep.json"
-osv-scanner scan source -r --format json . > "$out/osv.json"
-trivy fs --scanners vuln,misconfig --format json . > "$out/trivy.json"
-checkov -d . --compact --quiet -o cli --skip-framework secrets > "$out/checkov.txt"
+jq -c 'walk(if type == "object" then del(.lines, .Code) else . end) | .results[]
+       | select(.path == "<file>") | {rule: .check_id, line: .start.line}' "$out/semgrep.json"
 ```
+
+No bash shell: the script cannot run; see below.
 
 | Tool | Finds |
 |------|-------|

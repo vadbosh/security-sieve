@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.0 — 2026-10-09
+
+- **Step 3 is a script: `scripts/scan.sh <repo-dir>`.** It lists the
+  installed scanners, runs every one of them every time, and prints the tool
+  list, one status line per run (`rc`, seconds, errors found in the log) and
+  the grouped projections — detector or rule, file, line, commit, never a
+  value or a source line. Before, the model ran fifteen commands from the
+  text and could skip some; a rule in prose is not a guarantee. Without `jq`
+  it skips trufflehog, semgrep and trivy, as before. Bash 3.2 compatible.
+  Tested on a .NET repository: six tools run, two reported missing, no secret
+  value in the output.
+
 ## 1.4.2 — 2026-10-09
 
 - **Step 3 starts by listing the installed scanners** with `command -v`, and
