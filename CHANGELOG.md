@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **The scanner scratch directory is named per repository and never handed
+  over through a fixed file.** Each tool call may start a new shell, and two
+  reviews on one machine passed the path through the same `/tmp` file: one
+  read the other's `checkov` output. `mktemp -d` now gets a
+  `security-sieve.<repo>.XXXXXX` template, and Step 3 says to write the
+  printed path into later commands.
+
 ## 1.0.1 — 2026-10-09
 
 - **`AGENTS.md`, `CLAUDE.md` and `kb/` are no longer in the repository.** They

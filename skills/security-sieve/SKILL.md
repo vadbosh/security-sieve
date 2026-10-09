@@ -140,10 +140,18 @@ Scanner output goes into a scratch directory **outside the repository**, and
 is read through the projection in the table, never raw:
 
 ```bash
-out=$(mktemp -d)        # delete it once the report is written
+out=$(mktemp -d "${TMPDIR:-/tmp}/security-sieve.$(basename "$PWD").XXXXXX")
+echo "$out"             # note the path; delete the directory once the report is written
 TH='{detector: .DetectorName, verified: .Verified,
      where: (.SourceMetadata.Data | to_entries[0].value | {file, line, commit})}'
 ```
+
+Each tool call may start a new shell, so `$out` and `$TH` do not survive
+between calls. Write the printed path literally into every later command
+(`out=/tmp/security-sieve.api.Ab12Cd; …`) and set `TH` again where it is used.
+**Never pass the path through a fixed file** such as `/tmp/out_path`: two
+reviews running on one machine overwrite each other's, and one reads the
+other's scanner output. Measured: two parallel runs did exactly that.
 
 ```bash
 # Secrets — trufflehog: history, then the working tree (.git itself excluded)
