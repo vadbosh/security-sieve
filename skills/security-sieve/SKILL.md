@@ -195,6 +195,11 @@ Rules for these runs:
 - `trivy` runs without its secret scanner: secrets are the job of the two
   tools above, and its output would carry the values.
 
+**No bash, no scanners.** The commands above are bash. On Windows they run in
+Git Bash; where the assistant has only PowerShell, skip this step and write
+"Basic review: no scanners (no bash shell)" in the report summary, together
+with "Secrets in git history: NOT scanned".
+
 **The secret scanners matter most.** `trufflehog` and `gitleaks` are the only
 way the review sees git history: a key deleted three commits ago is invisible
 to reading the current files. When neither is installed, say so in the report
@@ -623,4 +628,4 @@ reviewed and which tools ran, so the reader knows what the empty result covers.
 | `kubernetes.md` | Pod security, RBAC, secrets, ingress, Helm |
 | `terraform.md` | IAM, network exposure, state and secrets in HCL |
 | `ci-cd.md` | GitHub Actions, GitLab CI, Jenkins |
-| `cloud.md` | IAM, mTLS, secrets and Vault, network, compliance |
+| `cloud.md` | IAM policies, secrets managers and Vault, service TLS, network exposure |

@@ -106,14 +106,18 @@ skill:  Diff mode: 14 files changed since merge base 3f2a91c.
 | Сканер | Какой командой скилл его запускает | Что добавляет | Если его нет |
 |---|---|---|---|
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | `semgrep scan --config p/default --metrics=off --json <path>` | поиск по паттернам для многих языков | Модель сама читает код от точек входа; на большом дереве может пропустить опасную операцию, далёкую от них |
-| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | `trufflehog git file://. --no-verification --json` | секреты в файлах и во всей истории git | Секреты ищутся только в файлах, которые читает модель. Ключ, удалённый в старом коммите, не виден |
-| [`gitleaks`](https://github.com/gitleaks/gitleaks) | `gitleaks git --no-banner --report-format json --report-path - .` | то же, что `trufflehog`, по другим правилам | То же, что выше. Достаточно одного из двух |
+| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | `trufflehog git file://. --no-verification --json`, затем `trufflehog filesystem . --no-verification --json` | секреты во всех коммитах, затем в ещё не закоммиченных файлах | Секреты ищутся только в файлах, которые читает модель. Ключ, удалённый в старом коммите, не виден |
+| [`gitleaks`](https://github.com/gitleaks/gitleaks) | `gitleaks git --no-banner --redact --report-format json --report-path - .`, затем то же с `gitleaks dir` | то же, что `trufflehog`, по другим правилам | То же, что выше. Достаточно одного из двух |
 | [`osv-scanner`](https://google.github.io/osv-scanner/) | `osv-scanner scan source -r --format json .` | версии зависимостей с известными уязвимостями, по lock-файлам | CVE зависимостей не перечисляются. В режиме Code они и так исключены, если уязвимый вызов недостижим; режим Threat model остаётся без списка зависимостей |
-| [`trivy`](https://trivy.dev/) | `trivy fs --scanners vuln,secret,misconfig --format json .` | зависимости, секреты и ошибки конфигурации IaC за один запуск | Частично покрывается остальными; если нет ни одного, IaC проверяется только по гайдам |
-| [`checkov`](https://www.checkov.io/) | `checkov -d . --compact --quiet -o json` | проверки политик для Terraform, Kubernetes, Dockerfile и CI | Terraform и Kubernetes проверяются только по гайдам |
+| [`trivy`](https://trivy.dev/) | `trivy fs --scanners vuln,misconfig --format json .` | зависимости и ошибки конфигурации IaC за один запуск | Частично покрывается остальными; если нет ни одного, IaC проверяется только по гайдам |
+| [`checkov`](https://www.checkov.io/) | `checkov -d . --compact --quiet -o cli` | проверки политик для Terraform, Kubernetes, Dockerfile и CI | Terraform и Kubernetes проверяются только по гайдам |
 
 В отчёте всегда указано, какие сканеры отработали, — по нему видно, что
 покрывает пустой результат.
+
+Вывод сканеров пишется во временный каталог вне репозитория, а скилл читает из
+него только выжимку: правило, файл, строку, коммит. Значения секретов до модели
+не доходят, и большой отчёт не забивает её контекст.
 
 Срабатывание сканера — такой же кандидат, как остальные, и проходит
 опровержение: большая часть вывода сканеров — советы по защите, а не эксплойты.
@@ -149,13 +153,35 @@ cd security-sieve
 
 Установщик копирует `skills/security-sieve/` в каталог каждого найденного
 ассистента: `~/.claude/skills`, `~/.config/opencode/skills`, `~/.codex/skills`.
-Больше он ничего не пишет. Повторный запуск заменяет только изменившиеся файлы.
+Повторный запуск заменяет только изменившиеся файлы. Файл, который вы правили
+вручную, перед перезаписью копируется в `~/.local/state/security-sieve-backups`.
+Больше установщик ничего не пишет. Если в копии ассистента остался файл, которого
+в исходниках больше нет, установщик о нём сообщает, но не удаляет.
+
+Codex читает ещё и `~/.agents/skills`, а `~/.codex/skills` в его исходниках
+помечен как старый путь, оставленный для совместимости. Установщик пишет в
+`~/.codex/skills`, как и другие репозитории скиллов автора; чтобы поставить в
+новое место, запустите `./install.sh --skills-dir ~/.agents/skills`.
 
 Установка в другой каталог:
 
 ```bash
 ./install.sh --skills-dir <path>
 ```
+
+### Windows
+
+```powershell
+.\install.ps1 -DryRun
+.\install.ps1
+```
+
+Те же три каталога в вашем профиле. Claude Code на Windows выполняет команды
+через Git Bash, если установлен Git for Windows, и через PowerShell, если нет.
+Команды сканеров в скилле написаны на bash, поэтому без Git Bash проверка
+**базовая**: модель читает код, сканеры не запускаются, и в отчёте стоит строка
+«Basic review: no scanners (no bash shell)». Установщик печатает то же
+предупреждение.
 
 В ассистенте:
 
@@ -178,9 +204,10 @@ cd security-sieve
 
 Скилл начинался как `security-review` из
 [getsentry/skills](https://github.com/getsentry/skills). Справочные материалы
-в `references/`, `languages/python.md`, `languages/javascript.md` и
-`infrastructure/docker.md` скопированы оттуда без изменений. Sentry написала их
-на основе [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/).
+скопированы оттуда без изменений: 17 файлов в `references/`,
+`languages/python.md`, `languages/javascript.md` и `infrastructure/docker.md`, все
+перечислены в `UPSTREAM`. Остальные гайды написаны для этого скилла. Sentry
+написала скопированные материалы на основе [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/).
 
 В файле `UPSTREAM` закреплён коммит, из которого взяты копии, и записаны их
 контрольные суммы. `./release.sh check` падает, если копия изменилась, а

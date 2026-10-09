@@ -7,13 +7,15 @@ report only what survives a refutation pass.
 
 ```bash
 ./install.sh --dry-run    # what would be written into the assistant directories
-./release.sh check        # version, changelog, tag, index, licenses, upstream copies, installed copies
+./release.sh verify       # changelog section, index, licenses, upstream copies, machine paths
+./release.sh check        # verify + tag, HEAD and installed copies — passes only after a release is tagged
 ./release.sh upstream     # has getsentry/skills moved since the pin (network)
 ```
 
 ## A task is done when
 
-- `./release.sh check` passes and its output is in the reply;
+- `./release.sh verify` passes and its output is in the reply; for a release,
+  `./release.sh check` after `tag` and `install.sh`;
 - a change to the method in SKILL.md was tried on a real target, not only read.
 
 ## Rules for this repository

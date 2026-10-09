@@ -106,14 +106,18 @@ already on `PATH`, with the command shown, and never installs one:
 | Scanner | Command the skill runs | Adds | If it is missing |
 |---|---|---|---|
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | `semgrep scan --config p/default --metrics=off --json <path>` | pattern matches across many languages | The model reads the code from the entry points itself; on a large tree it may miss a sink far from them |
-| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | `trufflehog git file://. --no-verification --json` | secrets in the files and in the whole git history | Secrets are found only in the files the model reads. A key deleted in an old commit is not seen |
-| [`gitleaks`](https://github.com/gitleaks/gitleaks) | `gitleaks git --no-banner --report-format json --report-path - .` | the same as `trufflehog`, with other rules | Same as above. One of the two is enough |
+| [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | `trufflehog git file://. --no-verification --json`, then `trufflehog filesystem . --no-verification --json` | secrets in every commit, then in files not committed yet | Secrets are found only in the files the model reads. A key deleted in an old commit is not seen |
+| [`gitleaks`](https://github.com/gitleaks/gitleaks) | `gitleaks git --no-banner --redact --report-format json --report-path - .`, then the same with `gitleaks dir` | the same as `trufflehog`, with other rules | Same as above. One of the two is enough |
 | [`osv-scanner`](https://google.github.io/osv-scanner/) | `osv-scanner scan source -r --format json .` | known-vulnerable dependency versions from lockfiles | Dependency CVEs are not listed. In code mode they are excluded anyway unless a vulnerable call is reachable; threat-model mode loses its dependency list |
-| [`trivy`](https://trivy.dev/) | `trivy fs --scanners vuln,secret,misconfig --format json .` | dependencies, secrets and IaC misconfiguration in one run | Covered in part by the others; without any of them, IaC is reviewed from the guides alone |
-| [`checkov`](https://www.checkov.io/) | `checkov -d . --compact --quiet -o json` | policy checks for Terraform, Kubernetes, Dockerfiles and CI | Terraform and Kubernetes are reviewed from the guides alone |
+| [`trivy`](https://trivy.dev/) | `trivy fs --scanners vuln,misconfig --format json .` | dependencies and IaC misconfiguration in one run | Covered in part by the others; without any of them, IaC is reviewed from the guides alone |
+| [`checkov`](https://www.checkov.io/) | `checkov -d . --compact --quiet -o cli` | policy checks for Terraform, Kubernetes, Dockerfiles and CI | Terraform and Kubernetes are reviewed from the guides alone |
 
 The report always says which scanners ran, so you know what an empty result
 covers.
+
+Scanner output goes to a temporary directory outside the repository, and the
+skill reads a projection of it: rule, file, line, commit. Secret values never
+reach the model, and a large report does not fill its context.
 
 A scanner hit is a candidate like any other and goes through the refutation
 pass: most scanner output is hardening advice, not an exploit.
@@ -149,14 +153,37 @@ cd security-sieve
 ```
 
 The installer copies `skills/security-sieve/` into each assistant it finds:
-`~/.claude/skills`, `~/.config/opencode/skills`, `~/.codex/skills`. It writes
-nothing else. Re-running it replaces only the files that changed.
+`~/.claude/skills`, `~/.config/opencode/skills`, `~/.codex/skills`.
+Re-running it replaces only the files that changed. Before it overwrites a
+file you edited by hand, it copies the file to
+`~/.local/state/security-sieve-backups`. It writes nothing else. A file left
+in an assistant's copy that the source no longer ships is reported, not
+deleted.
+
+Codex also reads `~/.agents/skills`, and its source marks `~/.codex/skills`
+as the older location kept for compatibility. The installer uses
+`~/.codex/skills`, like the author's other skill repositories; to use the new
+location, run `./install.sh --skills-dir ~/.agents/skills`.
 
 To install into another directory:
 
 ```bash
 ./install.sh --skills-dir <path>
 ```
+
+### Windows
+
+```powershell
+.\install.ps1 -DryRun
+.\install.ps1
+```
+
+The same three directories, under your profile. Claude Code on Windows runs
+shell commands through Git Bash when Git for Windows is installed, and through
+PowerShell when it is not. The scanner commands in the skill are bash, so
+without Git Bash the review is **basic**: the model reads the code, no scanner
+runs, and the report says "Basic review: no scanners (no bash shell)". The
+installer prints the same notice.
 
 In the assistant:
 
@@ -179,9 +206,11 @@ the infrastructure and agent guides, and tool evidence.
 
 The skill started as `security-review` from
 [getsentry/skills](https://github.com/getsentry/skills). The reference
-material in `references/`, `languages/python.md`, `languages/javascript.md`
-and `infrastructure/docker.md` is copied from it unchanged. Sentry derived that
-material from the [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/).
+material is copied from it unchanged: 17 files in `references/`,
+`languages/python.md`, `languages/javascript.md` and `infrastructure/docker.md`,
+all listed in `UPSTREAM`. The other guides were written for this skill.
+Sentry derived that material from the
+[OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/).
 
 `UPSTREAM` pins the commit those copies came from and records their checksums.
 `./release.sh check` fails if a copy changes, and `./release.sh upstream`

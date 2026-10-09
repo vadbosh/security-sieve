@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Install the security-sieve skill — Linux / macOS.
 #
-# The skill is Markdown files and nothing else: no binary, no PATH entry, no # runtime. Installing it is a copy into each assistant's skills directory.
+# The skill is Markdown files and nothing else: no binary, no PATH entry, no
+# runtime. Installing it is a copy into each assistant's skills directory.
 #
 #   ./install.sh                 install into every assistant found
 #   ./install.sh --dry-run       print what would happen, change nothing
@@ -11,7 +12,7 @@
 # copied to ~/.local/state/security-sieve-backups ONLY when that content is not
 # already in the source repository — a hand edit is the one thing git cannot
 # give back. Never beside the file; the three newest copies are kept.
-# Nothing outside $HOME is touched.
+# Nothing outside $HOME is touched unless --skills-dir points there.
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,8 +41,14 @@ SKILLS_DIR=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run)    DRY_RUN=1 ;;
-        --skills-dir) SKILLS_DIR="${2:-}"; shift ;;
-        -h|--help)    sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'; exit 0 ;;
+        # An empty value must not fall back to auto-detection: a wrapper passing
+        # an unset variable would install into every assistant on the machine.
+        --skills-dir)
+            if [ $# -lt 2 ] || [ -z "$2" ]; then
+                echo "--skills-dir needs a path" >&2; exit 2
+            fi
+            SKILLS_DIR="$2"; shift ;;
+        -h|--help)    sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'; exit 0 ;;
         *) echo "unknown option: $1" >&2; exit 2 ;;
     esac
     shift
@@ -126,6 +133,16 @@ while read -r dir; do
         install_file "$SRC/skills/security-sieve/$f" "$dir/security-sieve/$f"
     done < <(cd "$SRC/skills/security-sieve" && find . -type f ! -name '*.bak.*' \
              | sed 's|^\./||' | sort)
+    # A file the source no longer ships would still be loaded by the
+    # assistant. Report it; the directory is the assistant's, so it is not
+    # deleted here. CAPABILITIES.md is generated there by the host.
+    if [ -d "$dir/security-sieve" ]; then
+        while read -r f; do
+            [ "$f" = CAPABILITIES.md ] && continue
+            [ -f "$SRC/skills/security-sieve/$f" ] && continue
+            warn "    ! $(tilde "$dir/security-sieve/$f")  not in the source — stale, remove it by hand"
+        done < <(cd "$dir/security-sieve" && find . -type f ! -name '*.bak.*' | sed 's|^\./||' | sort)
+    fi
 done < <(detect_skill_dirs)
 
 if [ "$found" -eq 0 ]; then
@@ -169,6 +186,10 @@ if [ -n "$missing" ]; then
     warn "  └────────────────────────────────────────────────────────────────"
 else
     ok "  secret scanners: trufflehog and gitleaks found"
+fi
+if command -v trufflehog >/dev/null 2>&1 && ! command -v jq >/dev/null 2>&1; then
+    warn "  jq is not installed: the skill skips trufflehog, whose raw output"
+    warn "  carries the secret values. Install jq to use it."
 fi
 
 say ""
