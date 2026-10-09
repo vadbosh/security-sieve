@@ -1,0 +1,24 @@
+security-sieve
+Copyright 2026 Vad Bosh
+
+This product includes material from the following works.
+
+getsentry/skills — skills/security-review
+  https://github.com/getsentry/skills
+  Copyright Sentry (Functional Software, Inc.) and contributors.
+  Licensed under the Apache License 2.0.
+  SKILL.md is derived from its SKILL.md, with changes: the skill was
+  renamed, a refutation pass per finding, a diff mode, tool evidence,
+  variant analysis, exclusion rules and new guides were added, and the
+  output format was extended. The verbatim copies are listed in UPSTREAM.
+
+OWASP Cheat Sheet Series
+  https://cheatsheetseries.owasp.org/
+  OWASP Foundation, licensed under CC BY-SA 4.0.
+  The reference material copied from getsentry/skills is derived from it
+  and stays under CC BY-SA 4.0; see skills/security-sieve/LICENSE.
+
+The exclusion rules and the refutation pass in SKILL.md follow the method
+of anthropics/claude-code-security-review (MIT,
+https://github.com/anthropics/claude-code-security-review), restated in
+our own words.
