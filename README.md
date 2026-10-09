@@ -18,6 +18,11 @@
 > and merge the reports. An empty report from a weaker model does not mean
 > the code is safe. The skill names its model when it starts, and the report
 > names it too.
+>
+> **The report is an ASSESSMENT, not a final verdict.** It is a model's
+> estimate of what is exploitable. A person must check every finding against
+> the code and the deployment before anything is fixed, rotated, published or
+> sent to a client. What the report does not mention is not checked.
 
 A security-review skill for Claude Code, Codex and Opencode that **reports only
 vulnerabilities an attacker can exploit**.

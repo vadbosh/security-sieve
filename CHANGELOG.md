@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.9 — 2026-10-09
+
+- **The CAUTION block says the report is an assessment, not a final
+  verdict.** A person checks every finding against the code and the
+  deployment before anything is fixed, rotated, published or sent to a
+  client, and what the report does not mention is not checked.
+
 ## 1.3.8 — 2026-10-09
 
 - **The README opens with a red CAUTION block: the model decides what the
