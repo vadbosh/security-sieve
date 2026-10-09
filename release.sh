@@ -167,6 +167,10 @@ upstream_copies() {
 # examples name /root/ on purpose, which reads as $HOME when $HOME is /root.
 shipped_leaks() {
     local hits
+    if ! command -v perl >/dev/null 2>&1; then
+        echo "  shipped files:    cannot check — perl is not installed"
+        return 1
+    fi
     # perl, not grep -P: the BSD grep of macOS has no -P.
     hits="$(cd "$SKILL_DIR" && shipped | grep -vxFf <(awk '$1=="file"{print $3}' "$UPSTREAM") | xargs perl -ne 'print "$ARGV:$.:$_" if m{\Q$ENV{HOME}\E/[\w.-]|/home/(?!user\b)[a-z]|/Users/(?!user\b)[a-z]}; close ARGV if eof' || true)"
     if [ -n "$hits" ]; then
