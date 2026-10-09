@@ -2,15 +2,16 @@
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
 version: "1.0.0"
-allowed-tools: Read Grep Glob Bash Task
+allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
 
 <!--
 Derived from getsentry/skills, skills/security-review (Apache-2.0), with
-changes. Reference material in references/, languages/python.md,
-languages/javascript.md and infrastructure/docker.md is based on the OWASP
-Cheat Sheet Series (CC BY-SA 4.0): https://cheatsheetseries.owasp.org/
+changes. Reference material in the references/ files listed in UPSTREAM,
+languages/python.md, languages/javascript.md and infrastructure/docker.md is
+based on the OWASP Cheat Sheet Series (CC BY-SA 4.0):
+https://cheatsheetseries.owasp.org/
 See LICENSE in this directory for which file is under which license.
 -->
 
@@ -58,13 +59,26 @@ Before flagging anything, learn from the codebase:
 **Diff mode.** Find the base, then read every change against it:
 
 ```bash
-base=$(git merge-base HEAD origin/HEAD 2>/dev/null \
-    || git merge-base HEAD origin/main 2>/dev/null \
-    || git merge-base HEAD main)
-git log --oneline "$base"..HEAD          # what the branch is
-git diff --name-only "$base"...HEAD      # committed changes
-git diff HEAD                            # plus what is not committed yet
+base=""
+for ref in origin/HEAD origin/main origin/master main master trunk develop; do
+    git rev-parse -q --verify "$ref" >/dev/null || continue
+    base=$(git merge-base HEAD "$ref") && [ "$base" != "$(git rev-parse HEAD)" ] && break
+    base=""
+done
+echo "base=${base:-NONE}"
+git log --oneline "$base"..HEAD                 # what the branch is
+git diff --name-only "$base"...HEAD             # committed changes
+git diff HEAD --name-only                       # changed, not committed yet
+git ls-files --others --exclude-standard        # new files, not tracked yet
 ```
+
+- `base=NONE` — no default branch was found, or HEAD **is** the default
+  branch. Do not run the range commands: with an empty base they print
+  nothing and exit 0, which looks like an empty diff. Ask the user for the
+  base, or switch to code mode if they meant the current tree.
+- All four lists empty — there is nothing to review in diff mode. Say so and
+  offer code mode.
+- Untracked files are new code: read them in full.
 
 Report only what the change **introduces or makes reachable**: a new sink, a
 removed check, a widened permission, a new route to old vulnerable code. An old
@@ -122,14 +136,64 @@ reproducible. Run what is **already installed**; never install anything for
 the review. Every scanner hit is a **candidate** and goes through Steps 4–5
 like any other — most of their output is hardening advice, not an exploit.
 
-| Tool | Read-only run | Finds |
-|------|---------------|-------|
-| `semgrep` | `semgrep scan --config p/default --metrics=off --json <path>` | code patterns, many languages |
-| `trufflehog` | `trufflehog git file://. --no-verification --json` | secrets, including git history |
-| `gitleaks` | `gitleaks git --no-banner --report-format json --report-path - .` | secrets |
-| `osv-scanner` | `osv-scanner scan source -r --format json .` | known-vulnerable dependencies |
-| `trivy` | `trivy fs --scanners vuln,secret,misconfig --format json .` | dependencies, secrets, IaC |
-| `checkov` | `checkov -d . --compact --quiet -o json` | Terraform, Kubernetes, Dockerfile, CI |
+Scanner output goes into a scratch directory **outside the repository**, and
+is read through the projection in the table, never raw:
+
+```bash
+out=$(mktemp -d)        # delete it once the report is written
+TH='{detector: .DetectorName, verified: .Verified,
+     where: (.SourceMetadata.Data | to_entries[0].value | {file, line, commit})}'
+```
+
+```bash
+# Secrets — trufflehog: history, then the working tree (.git itself excluded)
+trufflehog git file://. --no-verification --json > "$out/th-git.ndjson"
+trufflehog filesystem . --no-verification --json \
+    -x <(printf '%s\n' '(^|/)\.git/') > "$out/th-fs.ndjson"
+jq -c "$TH" "$out/th-git.ndjson" "$out/th-fs.ndjson"
+
+# Secrets — gitleaks: history, then the working tree; --redact masks values
+gitleaks git --no-banner --redact --report-format json --report-path - . > "$out/gl-git.json"
+gitleaks dir --no-banner --redact --report-format json --report-path - . > "$out/gl-dir.json"
+jq -c '.[] | {RuleID, File, StartLine, Commit}' "$out/gl-git.json" "$out/gl-dir.json"
+
+# Code, dependencies, infrastructure
+semgrep scan --config p/default --metrics=off --json <path> > "$out/semgrep.json"
+osv-scanner scan source -r --format json . > "$out/osv.json"
+trivy fs --scanners vuln,misconfig --format json . > "$out/trivy.json"
+checkov -d . --compact --quiet -o cli > "$out/checkov.txt"
+```
+
+| Tool | Finds |
+|------|-------|
+| `trufflehog`, `gitleaks` | secrets in every commit (`git` mode) and in files not committed yet (`filesystem` / `dir` mode) |
+| `semgrep` | code patterns, many languages |
+| `osv-scanner` | known-vulnerable dependencies |
+| `trivy` | dependencies, IaC |
+| `checkov` | Terraform, Kubernetes, Dockerfile, CI |
+
+Rules for these runs:
+
+- **Never read a secret scanner's raw output.** `trufflehog` prints the secret
+  itself in `Raw`; `gitleaks` does too unless `--redact` is given. The
+  projections above keep the detector, file, line and commit and drop the
+  value. A report names where a secret is, never what it is. The skill masks
+  values itself and does not rely on any redaction tool of the host.
+- **No `jq`, no `trufflehog`.** Without `jq` there is no safe way to read
+  `trufflehog` output, so skip it and write "trufflehog skipped: jq not
+  installed" in the report. `gitleaks` with `--redact` is safe to read
+  directly: `Read` its JSON files.
+- **History and working tree are separate runs.** The `git` modes see commits
+  only; a key in an untracked or staged file is invisible to them. Run both
+  rows of each tool. In a directory that is not a git repository run only the
+  working-tree rows: `gitleaks git` there prints "no leaks found" with exit 0
+  after scanning 0 commits, which is not evidence of anything.
+- **Check the size before reading** the other files (`wc -c`). Over ~20 KB,
+  read the parts that name a rule, a file and a line. `checkov` runs with
+  `-o cli --compact`: its JSON is about seven times larger for the same
+  findings.
+- `trivy` runs without its secret scanner: secrets are the job of the two
+  tools above, and its output would carry the values.
 
 **The secret scanners matter most.** `trufflehog` and `gitleaks` are the only
 way the review sees git history: a key deleted three commits ago is invisible
@@ -177,11 +241,25 @@ libraries (DOMPurify, bleach), allowlists.
 This is the step that makes the report trustworthy. Each candidate is checked
 **on its own, in a fresh context**:
 
-- where the assistant can start subagents (Claude Code `Task`, Codex and
-  Opencode subagents), start one per candidate, in parallel, and give it the
-  candidate plus this step — not the other candidates;
+- where the assistant can start subagents (Claude Code `Agent`, Codex and
+  Opencode subagents), start one per candidate — at most **5 at a time**;
+  candidates in the same file go to one subagent together;
 - otherwise take them one at a time, and re-read the code for each one
   instead of relying on what you concluded during the hunt.
+
+A subagent starts from nothing and sees only what it is given. Give it, in
+full text, not as references to "the sections above":
+
+1. the candidate: location, class, source, sink, claimed gain;
+2. this step, Step 5, as written;
+3. the whole "Do not flag" section, with exclusions and precedents;
+4. the guides loaded for this code in Step 2, or their file paths so it can
+   read them;
+5. what to return: the one-sentence claim, the exploit scenario, the score,
+   and the exclusion that applies if any.
+
+Not the other candidates: a refuter that sees them starts comparing instead of
+checking.
 
 The refuter's job is to **break** the candidate, not to confirm it:
 
@@ -231,7 +309,9 @@ Use the output format below. In diff mode, list "Outside the diff" last.
 ### General
 
 - Test files and fixtures, unless the user asked to review test security.
-- Dead code, commented code, documentation and Markdown files.
+- Dead code, commented code, and documentation that nothing executes. Files
+  an assistant loads as instructions — `SKILL.md`, agent prompts, hook and MCP
+  configuration — are code for this review (`references/agentic.md`).
 - Values that are constants or server-controlled configuration.
 - Code paths behind authentication — note the requirement instead, and still
   report what an authenticated user can do to other users (IDOR, privilege
@@ -242,10 +322,14 @@ Use the output format below. In diff mode, list "Outside the diff" last.
 These are not reported, whatever their severity would be:
 
 1. Denial of service, resource exhaustion, missing rate limits, memory or CPU
-   consumption, regex denial of service.
+   consumption, regex denial of service. This holds in every mode and every
+   guide: a threat model may list availability threats as design notes,
+   never as findings.
 2. Missing hardening on its own — a header, a flag, a policy that is absent.
    Code is not required to implement every best practice; a finding needs a
-   concrete exploit.
+   concrete exploit. Unencrypted storage, a missing lock file and missing
+   versioning are hardening too, until an attacker has a path to read or
+   change the data.
 3. Outdated third-party libraries, unless the threat-model mode was asked for
    or the vulnerable function is shown to be called with attacker input.
 4. Theoretical race conditions and timing attacks. Report a race only with a
@@ -261,11 +345,18 @@ These are not reported, whatever their severity would be:
 11. Secrets on disk that are otherwise protected (permissions, encryption, a
     secrets store). Git history is not such protection: a secret committed
     once is readable by everyone who can clone — see "Secrets in code".
+12. Unpinned third-party code — an action or an image by tag, a module by
+    branch, a dependency by version range — unless its owner is outside the
+    organisation **and** the job or workload that runs it holds secrets or
+    deploy rights. Then it is a finding, Medium. Every guide follows this one
+    rule.
 
 ### Precedents
 
 - Environment variables and CLI flags are trusted: an attack that needs to
-  control them is not an attack.
+  control them is not an attack. The exception is a value built from
+  attacker-controlled event data — a CI variable set from a pull request
+  title or a branch name is attacker input (`infrastructure/ci-cd.md`).
 - UUIDs are unguessable.
 - React and Angular escape output unless `dangerouslySetInnerHTML`,
   `bypassSecurityTrustHtml` or an equivalent is used.
@@ -417,22 +508,29 @@ random.random() for token            # FLAG: tokens need the secrets module
 
 ## Posture score
 
-After the findings, compute a score `1-10` for the reviewed code or diff.
-**Apply the worst matching rule** — do not adjust by feel. The same findings
-always give the same score.
+After the findings, compute a score `1-10` for the reviewed code or diff by
+this formula — do not adjust it by feel. The same findings always give the
+same score.
 
-| Score | Trigger |
-|-------|---------|
-| **1-2**  | Any **Critical** finding |
-| **3-4**  | Several **High** findings, or 1 High and 1+ Medium |
-| **5-6**  | One **High**, or 3+ **Medium** findings |
-| **7-8**  | Only **Medium/Low** findings, 2 or fewer in total |
-| **9-10** | No findings |
+1. Any **Critical** finding: the score is `1` when there are two or more of
+   them or one is a live production secret (in code or in git history),
+   otherwise `2`. Stop here.
+2. Otherwise: `10 − 4 × High − 1.5 × Medium − 0.5 × Low`, rounded down, and
+   never below `3`.
 
-- Needs-verification items and findings outside the diff do not affect the score.
-- A live production secret, in code or in git history, is an automatic `1`.
-- A diff that fixes earlier Critical/High findings and introduces nothing new
-  scores at least `8`.
+| Findings | Score |
+|----------|-------|
+| none | 10 |
+| 1 Low | 9 |
+| 1 Medium, or 4 Low | 8 |
+| 2 Medium, or 1 Medium + 2 Low | 7 |
+| 1 High | 6 |
+| 3 Medium | 5 |
+| 1 High + 1 Medium | 4 |
+| 2 High or more | 3 |
+
+- Count a finding once, with its variants.
+- Needs-verification items and findings outside the diff do not count.
 
 The score is for triage at a glance. It is not CVSS.
 
@@ -448,8 +546,9 @@ The score is for triage at a glance. It is not CVSS.
 - **Findings**: X (Y Critical, Z High, ...)
 - **Posture score**: N/10
 - **Needs verification**: K
-- **Tools run**: [semgrep, trufflehog, ... / none installed]
+- **Tools run**: [semgrep, gitleaks git+dir, trufflehog git+filesystem, ... / none installed; name any tool skipped and why]
 - **Secrets in git history**: [scanned by trufflehog / gitleaks — or "NOT scanned: neither trufflehog nor gitleaks is installed"]
+- **Secrets in uncommitted files**: [scanned — or "NOT scanned"]
 
 ### Findings
 

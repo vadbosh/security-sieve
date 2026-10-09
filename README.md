@@ -80,6 +80,11 @@ works without it.
 |---|---|---|---|
 | Claude Code, Codex or Opencode | yes | runs the skill | — |
 | `git` | for diff mode | finding the merge base and the diff | Diff mode is not available. Code mode still works on files and directories |
+| `jq` | for `trufflehog` | reading `trufflehog` output without the secret values in it | `trufflehog` is skipped; `gitleaks` still runs |
+
+The skill masks secret values itself: `gitleaks` runs with `--redact`, and
+`trufflehog` output is read through a `jq` projection that drops the value. It
+does not depend on any redaction tool on your machine.
 
 > [!IMPORTANT]
 > **Install `trufflehog` and `gitleaks`.** They are the only way the review
