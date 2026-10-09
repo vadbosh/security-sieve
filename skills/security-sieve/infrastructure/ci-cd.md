@@ -67,6 +67,13 @@ jobs:
         run: echo "New issue: $TITLE"
 ```
 
+An environment variable is trusted only while nobody outside the maintainers
+shapes its value. The `env:` form above is safe from shell parsing, but a value
+built from event data (an issue title, a branch name, a commit message) is still
+attacker input when it reaches something that acts on it: a deploy argument, a
+file path, a `$GITHUB_ENV` write, a call to another program. This is the
+exception to "environment variables are trusted" in `SKILL.md`.
+
 Attacker-controlled contexts to look for inside `run:` and `actions/github-script` `script:`:
 
 - `github.event.issue.title`, `.issue.body`, `.comment.body`
@@ -167,10 +174,16 @@ Real case: on 14-15 March 2025 `tj-actions/changed-files` was compromised (CVE-2
 
 | Reference | Owner | Verdict |
 |-----------|-------|---------|
-| `@main`, `@master`, `@latest`, branch | third party | Report (Medium; High if the job holds deploy secrets or a write token) |
-| `@v3` / `@v3.2.1` tag | third party, job has secrets or write token | Report (Medium) |
+| `@main`, `@master`, `@latest`, branch, or a tag | owner outside the organisation, and the job holds secrets or a write or deploy token | Report (Medium) |
+| `@main`, `@master`, `@latest`, branch, or a tag | owner outside the organisation, job has no secrets and a read-only token | Hardening, do not report |
+| Any mutable reference | owned by your organisation | Do not report |
 | `@v4` tag | `actions/*`, `github/*` | Low, do not report |
 | Full SHA | any | Fine |
+
+This is exclusion 12 in `SKILL.md`, the one rule every guide follows for
+unpinned third-party code. Both conditions must hold, and the severity is
+Medium, not higher: a branch reference is not worse than a tag for this purpose
+once the owner and the job's rights are known.
 
 The same applies to `docker://image:tag` steps and reusable workflows (`uses: org/repo/.github/workflows/x.yml@ref`).
 
@@ -219,7 +232,15 @@ OIDC removes stored cloud keys, but the cloud-side trust policy decides who can 
 
 // SAFE: exact repository and environment (the environment carries required reviewers)
 "token.actions.githubusercontent.com:sub": "repo:my-org/my-repo:environment:production"
+
+// SAFE as well: immutable format with owner and repository IDs
+// (repositories created after 2026-07-15, or opted in)
+"token.actions.githubusercontent.com:sub": "repo:my-org@123456/my-repo@456789:environment:production"
 ```
+
+Both formats are correct; do not report a policy for using either one. A policy
+in the wrong format for the repository fails closed, which is a broken
+deployment and not a vulnerability.
 
 Claim formats: [GitHub OIDC docs](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect). That page states that repositories created after July 15, 2026 use an immutable default subject format with owner and repo IDs, so do not assume the older `repo:owner/name:...` shape for new repos. If the role's Terraform is in the repo, read it. If not, mark Needs Verification rather than guessing.
 
@@ -312,7 +333,7 @@ include:
     file: '/deploy.yml'
 ```
 
-Included files run in your pipeline with your variables. A `remote:` URL cannot be pinned or authenticated; report it when the pipeline holds production variables and the host is not yours. `ref: main` on a template project owned by your team behind merge approvals is Low.
+Included files run in your pipeline with your variables. A `remote:` URL cannot be pinned or authenticated; report it (Medium, exclusion 12 in `SKILL.md`) only when the pipeline holds production variables or deploy rights and the host is outside your organisation. `ref: main` on a template project owned by your team behind merge approvals is Low.
 
 ---
 

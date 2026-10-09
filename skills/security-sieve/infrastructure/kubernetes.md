@@ -21,7 +21,7 @@ Read this first. This skill reports high-confidence, exploitable findings only.
 | No `NetworkPolicy` in a namespace | Absence alone is context. It raises the impact of another confirmed finding, nothing more. |
 | Missing `resources.limits`/`requests` | Denial of service is out of scope. |
 | `privileged`, `hostNetwork`, `hostPath` in a DaemonSet of a known system component: CNI (Cilium, Calico, aws-node), CSI node plugins, node-exporter, log shippers (Fluent Bit, Vector), kube-proxy, device plugins | Expected. Check image, name, namespace and owning chart before flagging. Flag only if the workload is unknown, application code, or a tenant-deployable template. |
-| `image: foo:latest` or a tag without digest | Hygiene, low at best. Report only for an untrusted registry on a privileged or secret-holding workload. |
+| `image: foo:latest` or a tag without digest | Hygiene. Exclusion 12 in `SKILL.md` applies: report (Medium) only when the image owner is outside the organisation **and** the workload holds secrets or deploy rights (a privileged pod, a service account with write access, mounted credentials). |
 | `automountServiceAccountToken` at its default | Default behavior. Matters only if the bound SA has dangerous RBAC. |
 | Placeholder secrets (`changeme`, `<REPLACE>`, `{{ .Values.x }}`) | Not a real credential. |
 | Examples, `hack/`, `e2e/`, local `kind`/`minikube` manifests | Out of scope unless asked. |
@@ -141,7 +141,7 @@ Wildcards also cover future CRDs. Operators (cert-manager, Argo CD, Crossplane) 
 | `create` on pods or workload controllers | See next subsection. |
 | `get`/`list`/`watch` on `secrets`, cluster-wide | `list` and `watch` return secret contents, not only `get`. |
 | `create` on `serviceaccounts/token` | Mint tokens for ServiceAccounts in scope. |
-| `create`/`get` on `nodes/proxy` | Reaches the kubelet API through the API server (unverified: exact exec behavior depends on kubelet authorization and version; confirm before reporting). |
+| `create`/`get` on `nodes/proxy` | Reaches the kubelet API through the API server. The Kubernetes RBAC good-practices page says this allows command execution in every pod on the node, bypasses audit logging and admission control, and that `get` alone is enough through websocket `GET` requests, so `get` is not read-only here. |
 | `update`/`patch` on webhook configurations | Intercept or alter any admission request. |
 | `pods/exec`, `pods/attach` in sensitive namespaces | Command execution in existing pods. Check which namespaces. |
 
@@ -252,13 +252,14 @@ spec:
 # Backing app examples: Kubernetes Dashboard, Prometheus, Alertmanager,
 # Grafana with anonymous admin, Argo CD, Jaeger, Kibana, etcd
 
-# SAFE: internal scheme (AWS Load Balancer Controller annotation; verify against the installed version)
+# SAFE: internal scheme (AWS Load Balancer Controller annotation; its documented
+# default is internal, a public LB needs "internet-facing")
 metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-scheme: internal
 ```
 
-Report only when **both** hold: the Service or Ingress is externally reachable (public LB scheme, public node addresses, public ingress host), **and** the backing application has no authentication or a default one. Check `loadBalancerSourceRanges`, security groups and ingress auth annotations first. A NodePort on nodes without public addresses is not exposure.
+The annotation belongs to the AWS Load Balancer Controller (and differs under EKS Auto Mode, see the controller documentation); the in-tree provider and other clouds use other annotations. Report only when **both** hold: the Service or Ingress is externally reachable (public LB scheme, public node addresses, public ingress host), **and** the backing application has no authentication or a default one. Check `loadBalancerSourceRanges`, security groups and ingress auth annotations first. A NodePort on nodes without public addresses is not exposure.
 
 An internal tool (Prometheus, Alertmanager) published through an `Ingress` on a public class without an auth layer (oauth2-proxy, OIDC, mesh policy, `nginx.ingress.kubernetes.io/auth-url`) is the same finding.
 
@@ -308,7 +309,7 @@ webhooks:
 
 ## Images
 
-CWE-829. OWASP Top 10:2025 A03 Software Supply Chain Failures. A mutable tag (`:latest`) or missing digest is hygiene. Report only a mutable tag from a registry namespace you do not control on a privileged or secret-holding workload. Build content: `docker.md`. Registry and CI trust: `references/supply-chain.md`.
+CWE-829. OWASP Top 10:2025 A03 Software Supply Chain Failures. A mutable tag (`:latest`) or missing digest is hygiene. It follows exclusion 12 in `SKILL.md`: a finding (Medium) only when the image owner is outside the organisation and the workload holds secrets or deploy rights; otherwise do not report. Build content: `docker.md`. Registry and CI trust: `references/supply-chain.md`.
 
 ## EKS specifics
 
@@ -363,7 +364,7 @@ data:
 
 Report when a role or user that is not a platform-admin or break-glass identity is mapped to `system:masters` or cluster-scope `AmazonEKSClusterAdminPolicy`. Verify who can assume that role (trust policy) and what it is for. A CI role that is the cluster's only deployer is expected. A role with broad trust (`"AWS": "*"`, a whole account) plus cluster admin is a finding.
 
-Context, not findings: the cluster creator principal gets permanent admin in `CONFIG_MAP` mode and can be removed with `bootstrapClusterCreatorAdminPermissions=false` in `API` or `API_AND_CONFIG_MAP` mode; role mappings without `{{SessionName}}` in `username` hide the real user in audit logs; `mapUsers` entries imply IAM users. Whether EKS accepts `system:masters` as a group on access entries: unverified, check current EKS documentation before stating it.
+Context, not findings: the cluster creator principal gets permanent admin in `CONFIG_MAP` mode and can be removed with `bootstrapClusterCreatorAdminPermissions=false` in `API` or `API_AND_CONFIG_MAP` mode; role mappings without `{{SessionName}}` in `username` hide the real user in audit logs; `mapUsers` entries imply IAM users. Access entries cannot hand out `system:masters`: the EKS API rejects Kubernetes group names that start with `system:` (seen in a terraform-aws-modules issue and user reports; the AWS access-entries page does not state it, so re-check if it matters). Admin through an access entry is `AmazonEKSClusterAdminPolicy` or a custom group bound by RBAC; `system:masters` is reachable through the legacy `aws-auth` map.
 
 ---
 

@@ -22,9 +22,9 @@ can use. See "Tool Evidence" and "Do Not Flag" at the end.
 | Open admin or database ports | CWE-284 | A02 Security Misconfiguration |
 | Weak trust policy, OIDC without `sub` | CWE-287 | A07 Authentication Failures |
 | Secrets in code, outputs, state | CWE-798, CWE-312 | A04 Cryptographic Failures |
-| Unprotected state backend | CWE-922 | A02 Security Misconfiguration |
-| `local-exec` / `external` injection | CWE-78 | A08 Software or Data Integrity Failures |
-| Unpinned module or provider source | CWE-829 | A03 Software Supply Chain Failures |
+| State readable or writable by an outsider | CWE-922 | A02 Security Misconfiguration |
+| `local-exec` / `external` injection | CWE-78 | A05 Injection |
+| Unpinned module or provider source (only under the "Supply Chain" conditions) | CWE-829 | A03 Software Supply Chain Failures |
 | KMS key policy open to `*` | CWE-732 | A01 Broken Access Control |
 
 ---
@@ -117,7 +117,24 @@ condition {
   variable = "token.actions.githubusercontent.com:sub"
   values   = ["repo:my-org/my-repo:ref:refs/heads/main"]
 }
+
+# SAFE as well: the immutable format, with owner and repository IDs
+# (default for repositories created after 2026-07-15; older ones keep the
+# format above unless the organisation or repository opted in)
+condition {
+  test     = "StringEquals"
+  variable = "token.actions.githubusercontent.com:sub"
+  values   = ["repo:my-org@123456/my-repo@456789:ref:refs/heads/main"]
+}
 ```
+
+Both formats are correct. Judge a trust policy against the format the
+repository's tokens use, and do not report a policy for being in the new format
+(`OWNER@OWNER-ID/REPO@REPO-ID`) or ask for the old one. A policy that holds only
+one format fails closed for a repository on the other: that is a broken
+deployment, not a vulnerability. GitHub Enterprise Server does not use the new
+format. Source: GitHub Docs, "OpenID Connect reference", section "Immutable
+subject claims".
 
 GitLab: the condition must match `<gitlab-host>:sub` (for example
 `project_path:my-group/my-project:ref_type:branch:ref:main`), not only `:aud`.
@@ -194,7 +211,9 @@ alone: Medium, needs verification. Same check for `aws_rds_cluster_instance`,
 read `access_policies` (`Principal "*"` without `Condition`) and whether
 `vpc_options` is absent. ElastiCache has no public flag: look at subnet and
 security group (6379). Unencrypted storage (`storage_encrypted`, EBS `encrypted`)
-is hardening: report only with clear sensitive-data context (Low).
+is hardening, not a finding. It becomes one only together with a path by which
+an attacker reads or changes the data, and then the finding is that path (a
+public snapshot, a shared snapshot, an open policy), not the missing flag.
 
 ---
 
@@ -281,16 +300,22 @@ State is plaintext JSON with every attribute, including passwords and
 `random_password` results. `sensitive = true` only hides values from CLI output.
 The backend must be private, and `terraform.tfstate*` must never be committed.
 
+A state backend without `encrypt = true` or without locking is hardening, not a
+finding: both are missing hardening (exclusion 2 in `SKILL.md`). Missing
+locking is also an availability and consistency matter, not a confidentiality
+one. The finding is access: someone who should not read or write the state can.
+
 ```hcl
-# VULNERABLE: state backend without encryption or locking
+# NOT A FINDING ON ITS OWN: no encryption flag, no locking
 terraform {
   backend "s3" {
     bucket = "example-tfstate"
     key    = "prod/terraform.tfstate"
   }
 }
-
-# SAFE: encrypt = true, and locking via use_lockfile or dynamodb_table
+# Hardening advice: encrypt = true, and locking via use_lockfile or dynamodb_table
+# FINDING: the bucket behind it has a policy readable or writable by "*",
+# or its public-access block is off (see the bullets below)
 ```
 
 - State bucket with no public-access block, or a policy readable by `*`: High.
@@ -331,6 +356,10 @@ Trace the value before reporting:
   `data "http"` response from an external host, input from a self-service
   portal that generates Terraform.
 - Metacharacters matter when `command` runs through a shell (the default).
+- Pipeline variables are trusted only when nobody outside the maintainers can
+  set them. A value built from event data (a branch name, a merge request
+  title) is attacker input even though it arrives as an environment variable:
+  see the precedent in `SKILL.md` and `infrastructure/ci-cd.md`.
 
 ---
 
@@ -349,13 +378,21 @@ module "eks" {
 }
 ```
 
-- Unpinned module from an unknown third party or personal account, in a stack
-  that holds production credentials: Medium to High, verify who owns the source.
-- Unpinned module from the organisation's own trusted repository: hardening,
-  do not flag.
+- Unpinned means here a git source without a commit SHA or tag, a registry
+  module without `version`, a provider without a version constraint. It is a
+  finding (Medium) only when both hold: the owner of the module is outside the
+  organisation (a third party or a personal account), **and** the run that
+  initialises it holds secrets or deploy rights (cloud credentials in the
+  pipeline, a production workspace). This is exclusion 12 in `SKILL.md`, the
+  same rule as for actions and images.
+- Unpinned module from the organisation's own repository, or in a stack that
+  holds no credentials: hardening, do not flag.
 - Raw `http://` source, or a provider from an unexpected namespace that looks
-  like a typosquat: check the namespace; a look-alike is High.
-- Missing `.terraform.lock.hcl`: Low. Pipeline side: `references/supply-chain.md`.
+  like a typosquat: check the namespace; a look-alike that the run would fetch
+  with credentials in reach is a finding on the same two conditions, and then
+  High, since the name itself shows intent.
+- A missing `.terraform.lock.hcl` is hardening, not a finding: it does not by
+  itself give an attacker a path. Pipeline side: `references/supply-chain.md`.
 
 ---
 
@@ -407,16 +444,20 @@ read-only on a checkout and write output outside the repository. Never run
 # Checkov: HCL only, failed checks only, no code blocks, exit code 0
 checkov -d . --framework terraform --quiet --compact --soft-fail
 
-# Trivy config scanner (tfsec is folded into Trivy)
-trivy config --severity HIGH,CRITICAL .        # (unverified)
+# Trivy config scanner (tfsec's engine now lives in Trivy)
+trivy config --severity HIGH,CRITICAL .
 
-# KICS
-kics scan -p . -o /tmp/kics-out                # (unverified)
+# KICS: -p is the path to scan, -o the directory for reports
+kics scan -p . -o /tmp/kics-out
 ```
 
 Checkov flags (`-d`, `-f`, `--framework`, `--quiet`, `--compact`, `--soft-fail`,
-`--check`, `-o`) are in its CLI reference; the Trivy and KICS commands are not
-confirmed against current docs.
+`--check`, `-o`) are in its CLI reference. `trivy config` takes `-s` /
+`--severity` with the values UNKNOWN, LOW, MEDIUM, HIGH, CRITICAL, and `kics
+scan` takes `-p` / `--path` and `-o` / `--output-path` (Trivy CLI reference and
+KICS command documentation, checked 2026-10-09). tfsec's own repository says
+its scanning was consolidated into Trivy and that tfsec remains available but
+is no longer the focus, so use `trivy config` for new work.
 
 Most hits are hardening. Candidates: open sensitive ports, `Principal "*"`,
 wildcards on assumable roles, real secrets. Open the resource, follow variables,
@@ -428,6 +469,10 @@ read what is attached to it. A scanner check id is not evidence.
 
 - Missing encryption at rest, logging, versioning, tags or deletion protection.
   Hardening, not findings.
+- A state backend without encryption or locking, and a missing
+  `.terraform.lock.hcl`: hardening, until an attacker has a path to the state.
+- Unpinned modules and providers when the owner is inside the organisation or
+  the run holds no secrets or deploy rights.
 - `0.0.0.0/0` on 80 and 443 of an internet-facing load balancer or CDN origin.
 - Egress `0.0.0.0/0` (the AWS default).
 - Wildcard `Resource` on read-only list or describe actions. Wildcard on write,
@@ -444,6 +489,8 @@ read what is attached to it. A scanner check id is not evidence.
 
 - [Terraform AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 - [GitHub Docs: Configuring OpenID Connect in Amazon Web Services](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws)
+- [GitHub Docs: OpenID Connect reference](https://docs.github.com/en/actions/reference/security/oidc) (subject formats, immutable subject claims)
+- [Trivy: `trivy config`](https://trivy.dev/latest/docs/references/configuration/cli/trivy_config/) and [KICS commands](https://docs.kics.io/latest/commands/)
 - [AWS: confused deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html)
 - [Checkov CLI reference](https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html)
 - [OWASP Top 10:2025](https://owasp.org/Top10/)

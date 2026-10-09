@@ -2,7 +2,7 @@
 # Threat Modeling and CVE Triage Reference
 
 STRIDE threat modeling, attack surface, CVE research, dependency triage and a
-remediation plan. Merged in from the former `security-researcher` skill. Auth,
+remediation plan. Auth,
 crypto and input validation are not repeated here: `authentication.md`,
 `authorization.md`, `cryptography.md`, `injection.md`, `xss.md`, `ssrf.md`,
 `file-security.md`.
@@ -18,7 +18,8 @@ crypto and input validation are not repeated here: `authentication.md`,
    - **T**ampering — data modification in transit or at rest
    - **R**epudiation — missing audit trails (`logging.md`)
    - **I**nformation disclosure — data leakage paths (`data-protection.md`)
-   - **D**enial of service — availability attack surfaces
+   - **D**enial of service — availability threats are listed in the model as
+     design notes, never reported as findings (`SKILL.md` exclusion 1)
    - **E**levation of privilege — authorization bypass paths (`authorization.md`)
 
 3. **Attack surface** — catalog every entry point: network services and their

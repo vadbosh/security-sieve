@@ -103,7 +103,7 @@ system("ping -c 1 $host");
 $out = `grep $term /var/log/app.log`;
 mail($to, $subj, $body, '', "-f$from");                       // sendmail option injection
 
-// SAFE: argv array, no shell (array form of proc_open needs PHP 7.4+, unverified)
+// SAFE: argv array, no shell (array form of proc_open needs PHP 7.4.0+)
 proc_open(['convert', $file, 'out.png'], $spec, $pipes);
 $p = new Process(['convert', $file, 'out.png']);              // Symfony Process, argv form
 ```
@@ -243,7 +243,6 @@ if ($a === $b) { ... }
 
 in_array($_GET['id'], $allowedIds);                           // FLAG when it guards access
 in_array($_GET['id'], $allowedIds, true);                     // SAFE
-
 ```
 
 ## Variable Injection and Mass Assignment
@@ -298,8 +297,10 @@ htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
 ```
 
 - Blade `{{ }}` passes through `htmlspecialchars`; `{!! !!}` does not (verified in the Laravel docs).
-- Twig `|raw` marks a value safe and skips autoescape (verified). HTML autoescape is on by default in a
-  stock environment (unverified here; check the `autoescape` option / `twig.yaml`).
+- Twig `|raw` marks a value safe and skips autoescape (verified). The escaper extension is registered by
+  default and the `autoescape` option picks the strategy (`name`, the filename-based one, resolves a
+  `.html.twig` template to HTML), so a stock setup escapes HTML. Look for `autoescape: false`
+  in the environment options or `twig.yaml`.
 - Escaping is context-bound: HTML escaping does not protect `href="javascript:..."`, inline `<script>`,
   `onclick=` or `<style>`. Validate URL schemes (`http`, `https`, relative).
 
@@ -314,10 +315,14 @@ protected $except = ['api/*', 'payment/callback'];            // CHECK: cookie-a
 $middleware->validateCsrfTokens(except: ['*']);               // FLAG (Laravel 11+ bootstrap/app.php)
 Route::withoutMiddleware(VerifyCsrfToken::class)->post('/transfer', ...);   // CHECK
 Route::get('/delete/{id}', ...);                              // FLAG: state change on GET
-
 ```
 
 Stateless token APIs (Bearer header) do not need CSRF. Cookie or session routes do, including those in
+JSON or AJAX endpoints: the browser attaches the cookie to a cross-site request whatever the response
+format. A route is outside protection only when the framework excludes it: Laravel `$except` in
+`VerifyCsrfToken`, `validateCsrfTokens(except: [...])`, or a route group without the `web` middleware
+group; Symfony `framework.csrf_protection: false` or a form/handler that never checks the token. Report
+an exclusion only for a route that authenticates by cookie or session and changes state.
 
 ## Sessions and Authentication
 
@@ -331,9 +336,12 @@ ini_set('session.use_only_cookies', '0');
 ```
 
 Laravel `Auth::attempt` plus `session()->regenerate()` is safe; custom login writing session keys is not.
-Check `session.cookie_httponly`, `cookie_secure`, `cookie_samesite`, `use_strict_mode`, `use_only_cookies`
-(Laravel `config/session.php`: `secure`, `http_only`, `same_site`), login throttling (`throttle` middleware),
-user enumeration, reset tokens without expiry.
+Read `session.cookie_httponly`, `cookie_secure`, `cookie_samesite`, `use_strict_mode`, `use_only_cookies`
+(Laravel `config/session.php`: `secure`, `http_only`, `same_site`) for context only: a flag that is
+absent is hardening, not a finding, until a concrete path exists (for example `use_strict_mode` off
+together with an id accepted from the request). Missing login throttling is a missing rate limit and
+is not reported. Report user enumeration that reveals accounts to an anonymous caller, and reset
+tokens that never expire or can be guessed.
 
 ## Weak Randomness
 
@@ -349,7 +357,6 @@ $code  = mt_rand(100000, 999999);   mt_srand($userId);   srand(time());
 bin2hex(random_bytes(32));   random_int(100000, 999999);   Str::random(40);   // Laravel, CSPRNG
 ```
 
-
 ## Password Hashing and Crypto
 
 CWE-327, CWE-328, CWE-916 | OWASP A04:2025 Cryptographic Failures
@@ -364,7 +371,7 @@ $hash = password_hash($pw, PASSWORD_DEFAULT);                 // bcrypt; or PASS
 if (password_verify($pw, $hash) && password_needs_rehash($hash, PASSWORD_DEFAULT)) { /* rehash */ }
 ```
 
-Other smells: `mcrypt_*` (removed in PHP 7.2, unverified), `openssl_encrypt` with ECB or a fixed IV, AES
+Other smells: `mcrypt_*` (deprecated in PHP 7.1.0, moved to PECL and gone from PHP 7.2.0), `openssl_encrypt` with ECB or a fixed IV, AES
 without authentication (use `-gcm` or `sodium_crypto_secretbox`), MAC compared with `==` (use
 `hash_equals`), hard-coded keys, disabled TLS verification (`CURLOPT_SSL_VERIFYPEER => false`, Guzzle
 `'verify' => false`, stream context `verify_peer => false`). `md5` / `sha1` for cache keys or ETags is fine.
@@ -392,14 +399,18 @@ if (!str_starts_with($to, '/') || str_starts_with($to, '//') || str_contains($to
 Also CHECK webhooks, avatar-by-URL, HTML-to-PDF, import-from-URL. Baseline: scheme and host allow-list; resolve the host and test every IP against private ranges (`127.0.0.0/8`,
 `10/8`, `172.16/12`, `192.168/16`, `169.254.169.254`, `::1`, `fc00::/7`), connect to the resolved IP
 (DNS rebinding), and disable redirects or re-validate each hop (`CURLOPT_FOLLOWLOCATION`, Guzzle
-`allow_redirects`). `FILTER_VALIDATE_URL` checks syntax, not safety (unverified for non-HTTP schemes).
+`allow_redirects`). `FILTER_VALIDATE_URL` checks syntax, not safety, and the manual's own user notes show odd strings
+passing it; whether it accepts non-HTTP schemes (`file:`, `gopher:`) was not confirmed against the
+manual page for this guide (unverified), so test the scheme yourself with `parse_url`.
 
 ## Header Injection and Host Trust
 
 CWE-113, CWE-644 | OWASP A05:2025 Injection, A02:2025 Security Misconfiguration
 
-- `header()` rejects embedded newlines in modern PHP, so classic CRLF splitting is mostly gone (unverified).
-  Still check `mail()` headers built from input (`\r\n` adds `Bcc`) and raw socket writes of headers.
+- `header()` refuses a value holding a newline and raises the warning "Header may not contain more than a
+  single header, new line detected", so classic CRLF splitting is mostly gone. That check has been
+  bypassed before (php.net bug 81518, through `default_mimetype`), so do not assume it covers
+  ini-derived headers. Still check `mail()` headers built from input (`\r\n` adds `Bcc`) and raw socket writes of headers.
 - `$_SERVER['HTTP_HOST']`, `X-Forwarded-Host`, `X-Forwarded-For`, `X-Forwarded-Proto` are client
   controlled unless a trusted proxy overwrites them. Flag `'https://' . $_SERVER['HTTP_HOST'] . '/reset?token=' . $t`
   (poisoned reset link) and `HTTP_X_FORWARDED_FOR` used for rate limits or allow-lists. Use
@@ -414,29 +425,43 @@ reachable `phpinfo();`, a committed `APP_KEY`, `echo $e->getMessage()` or `var_d
 text, paths, DSN passwords). Symfony: dev front controller (`app_dev.php`) or `_profiler` / `_wdt` reachable in production. Also
 Telescope, Horizon, Debugbar, Adminer, phpMyAdmin without authentication; `.env`, `.git`,
 `composer.lock`, `*.bak`, `*.sql` under the web root; `storage/logs/laravel.log` reachable; logs that
-hold passwords, tokens or card numbers (CWE-532). Missing audit logging of auth events and access
-denials is A09:2025 Security Logging & Alerting Failures.
+hold passwords, tokens or card numbers (CWE-532). Absent audit logging of auth events (A09:2025
+Security Logging & Alerting Failures) is missing hardening and is not reported on its own.
 
 ## PHP-FPM / Web Server Misconfiguration (brief)
 
 CWE-16 | OWASP A02:2025 Security Misconfiguration
+
+- A web server that passes a request for a non-PHP file to PHP-FPM, with `cgi.fix_pathinfo=1` left on
+  and no file-existence check in the server, can let `/uploads/avatar.png/x.php` run the
+  PNG as a PHP script: PHP resolves `PATH_INFO` by trimming the path back to a file that exists. This
+  is code execution when users can upload files. The PHP manual's nginx guide sets `cgi.fix_pathinfo=0`
+  for this reason. The `security.limit_extensions` pool option (default `.php .phar`) makes FPM refuse
+  to parse any main script with another extension; With uploads present, an emptied or
+  widened `limit_extensions` (for example `.php .html .jpg`) is the finding, since FPM then parses
   non-PHP files as PHP.
 - Document root is the project root, not `public/`: exposes `.env`, `vendor/`, `storage/`.
 - PHP-FPM listening on a reachable TCP port (`listen = 0.0.0.0:9000`): unauthenticated FastCGI is code execution.
-- Supply chain (A03:2025 Software Supply Chain Failures): no `composer.lock`, `composer audit` not run,
-  committed `vendor/` with outdated packages, install scripts that pipe `curl` to `sh`.
+- Supply chain (A03:2025 Software Supply Chain Failures): a committed `vendor/` or lock file that pins a
+  package with a known advisory whose vulnerable code the application reaches; install scripts that
+  pipe `curl` to `sh`. A missing `composer.lock` or a `composer audit` that was never run is hardening,
+  not a finding.
 
 ## Grep Patterns
 
+Single quotes keep the shell from touching `$`. Inside double quotes `\$` reaches the regex engine as a
+bare `$`, an end-of-line anchor, and the pattern silently matches nothing. These hits are candidates:
+each still goes through the source-to-sink check.
+
 ```bash
-grep -rnE "(whereRaw|orderByRaw|selectRaw|havingRaw|groupByRaw|DB::(raw|select|statement)|createQuery|executeQuery|->query|mysqli_query)\(.*(\$_(GET|POST|REQUEST)|\$request|\"[^\"]*\$)" --include="*.php"
-grep -rnE "\b(exec|shell_exec|system|passthru|popen|proc_open|pcntl_exec|eval|assert|create_function)\s*\(|escapeshellcmd|fromShellCommandline|call_user_func(_array)?\s*\(\s*\$|new\s+\$" --include="*.php"
-grep -rnE "unserialize\s*\(|phar://|->getMetadata\(|allow_url_include|\b(include|require)(_once)?\s*\(?[^;]*\$_(GET|POST|REQUEST)|move_uploaded_file" --include="*.php" --include="*.ini"
-grep -rnE "LIBXML_NOENT|LIBXML_DTDLOAD|SUBST_ENTITIES|md5\([^)]*\)\s*==[^=]|strcmp\(|in_array\([^,)]*,[^,)]*\)|extract\s*\(\s*\$_" --include="*.php"
-grep -rnE "\$guarded\s*=\s*\[\s*\]|forceFill|forceCreate|unguard\(|->(fill|update)\(\$request->(all|input)\(|::create\(\$request->all" --include="*.php"
-grep -rnE "\{!!|@php|\|\s*raw|autoescape\s+false|new HtmlString|VerifyCsrfToken|validateCsrfTokens|csrf_protection" --include="*.php" --include="*.twig" --include="*.yaml"
-grep -rnE "\b(rand|mt_rand|uniqid|str_shuffle|md5|sha1)\s*\(|HTTP_HOST|HTTP_X_FORWARDED|header\s*\(\s*['\"]Location|(curl_init|file_get_contents|Http::(get|post))\s*\(\s*\$" --include="*.php"
-grep -rnE "APP_DEBUG\s*=\s*true|phpinfo\s*\(|display_errors\s*=\s*(On|1)|APP_KEY=" --include="*.php" --include="*.env*" --include="*.ini"
+rg -n '(whereRaw|orderByRaw|selectRaw|havingRaw|groupByRaw|DB::(raw|select|statement)|createQuery|executeQuery|->query|mysqli_query)\(.*(\$_(GET|POST|REQUEST)|\$request|"[^"]*\$)' -g '*.php'
+rg -n '\b(exec|shell_exec|system|passthru|popen|proc_open|pcntl_exec|eval|assert|create_function)\s*\(|escapeshellcmd|fromShellCommandline|call_user_func(_array)?\s*\(\s*\$|new\s+\$' -g '*.php'
+rg -n 'unserialize\s*\(|phar://|->getMetadata\(|allow_url_include|\b(include|require)(_once)?\s*\(?[^;]*\$_(GET|POST|REQUEST)|move_uploaded_file' -g '*.php' -g '*.ini'
+rg -n 'LIBXML_NOENT|LIBXML_DTDLOAD|SUBST_ENTITIES|md5\([^)]*\)\s*==[^=]|strcmp\(|in_array\([^,)]*,[^,)]*\)|extract\s*\(\s*\$_' -g '*.php'
+rg -n '\$guarded\s*=\s*\[\s*\]|forceFill|forceCreate|unguard\(|->(fill|update)\(\$request->(all|input)\(|::create\(\$request->all' -g '*.php'
+rg -n '\{!!|@php|\|\s*raw|autoescape\s+false|new HtmlString|VerifyCsrfToken|validateCsrfTokens|csrf_protection' -g '*.php' -g '*.twig' -g '*.yaml'
+rg -n '\b(rand|mt_rand|uniqid|str_shuffle|md5|sha1)\s*\(|HTTP_HOST|HTTP_X_FORWARDED|header\s*\(\s*.Location|(curl_init|file_get_contents|Http::(get|post))\s*\(\s*\$' -g '*.php'
+rg -n --hidden 'APP_DEBUG\s*=\s*true|phpinfo\s*\(|display_errors\s*=\s*(On|1)|APP_KEY=' -g '*.php' -g '.env*' -g '*.ini'
 ```
 
 ## Checklist

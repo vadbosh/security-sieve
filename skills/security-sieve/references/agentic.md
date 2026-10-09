@@ -37,9 +37,11 @@ Hijack, ASI02 Tool Misuse and Exploitation, ASI03 Identity and Privilege Abuse,
 ASI04 Agentic Supply Chain Vulnerabilities, ASI05 Unexpected Code Execution,
 ASI06 Memory and Context Poisoning, ASI07 Insecure Inter-Agent Communication,
 ASI08 Cascading Failures, ASI09 Human-Agent Trust Exploitation, ASI10 Rogue
-Agents. The official landing page does not expose the list as text, so names
-come from secondary write-ups; wording of ASI02, ASI05 and ASI09 may differ
-slightly from the PDF. The number is the stable key.
+Agents. The names follow the published list. The official page and PDF were
+not readable as text when this guide was written; the names above agree across
+several independent write-ups, but the exact wording of ASI02, ASI05 and ASI09
+is not confirmed against the PDF. The number is the stable key: where the
+wording matters, cite the number only.
 
 **MCP Security Best Practices** (modelcontextprotocol.io): confused deputy,
 token passthrough, SSRF in OAuth discovery, state handle hijacking (older
@@ -91,7 +93,7 @@ prompts off.
 
 ```json
 // VULNERABLE: committed to a repo, applies to everyone who opens it
-{ "permissions": { "allow": ["Bash(*)", "Write(*)", "WebFetch(*)"] }, "dangerouslySkipPermissions": true }
+{ "permissions": { "allow": ["Bash(*)", "Write(*)", "WebFetch(*)"], "defaultMode": "bypassPermissions" } }
 // SAFE: named commands allowed, secrets and network denied, the rest asks
 { "permissions": { "allow": ["Bash(git status)", "Read(./src/**)"], "deny": ["Read(./.env*)", "Bash(curl:*)"] } }
 ```
@@ -106,7 +108,7 @@ if not p.is_relative_to(ROOT):
 
 ```bash
 rg -n -- '--dangerously-skip-permissions|--dangerously|--yolo|--full-auto|--no-sandbox'
-rg -n 'dangerouslySkipPermissions|skip_?permissions|sandbox_?mode\W+(danger|none|off)'
+rg -n '"defaultMode"\s*:\s*"bypassPermissions"|skip_?permissions|sandbox_?mode\W+(danger|none|off)'
 rg -n '"allow"\s*:\s*\[[^]]*"(Bash|Shell|Exec)\(\*\)"'
 rg -n 'shell\s*=\s*True|child_process\.exec\(|os\.system\('
 ```
@@ -115,6 +117,14 @@ Report when the permissive setting is in a file that ships to other users
 (repo config, packaged plugin, installer default), or a tool exposes an
 arbitrary shell or path to model-chosen arguments with no allowlist and Class 1
 conditions can reach it.
+
+Whether a committed project settings file can set `bypassPermissions` at all
+depends on the host version: the Claude Code agent-view documentation says
+`auto` and `bypassPermissions` take effect only from managed settings, a
+`--settings` file or the user's `~/.claude/settings.json`, and that a project
+file asking for a more permissive mode is refused. Check the current rule
+before scoring a project-level file; an installer that writes the mode into the
+user's own settings is the stronger case.
 
 Do not flag: the flag in docs or in CI for an isolated runner; a deny rule that
 names the dangerous flag; a terminal agent whose shell tool asks by default
@@ -167,7 +177,7 @@ rg -n 'fetch\((url|args|params|input)|requests\.(get|post)\((url|args|params)'
 Do not flag: `subprocess` with a fixed argv and no model-controlled element; a
 fetch tool limited to a host allowlist enforced after DNS resolution; paths
 joined only after `resolve()` plus containment check; a user-run stdio server
-whose tools only do what the user could do in a shell (see the global rules).
+whose tools only do what the user could do in a shell (see "Do not flag" at the end of this file).
 
 ## Class 4: MCP authentication, transport and tokens
 
@@ -242,8 +252,10 @@ Do not flag: unpinned `npx -y` in a developer's own unshared config; description
 LLM04, ASI04, ASI05, ASI03. CWE-829, CWE-494, CWE-78, CWE-22, CWE-200, CWE-912.
 
 A skill is instructions plus scripts run with the user's privileges. Review its
-scripts like an installer, and SKILL.md as an injection surface: it is read as
-trusted instructions.
+scripts like an installer. Its `SKILL.md`, like agent prompts and hook or MCP
+configuration, is code for this review: an assistant loads it as trusted
+instructions, so it is an injection surface (this matches the "Do not flag"
+section of the skill's own `SKILL.md`).
 
 Reportable:
 
@@ -433,11 +445,10 @@ runtime, logs with names, durations and ids only, masked values.
 - **Theoretical supply-chain risk** of using a third-party MCP server or skill, with no evidence in the code under
   review. The finding is the unpinned or unverified fetch, or the malicious behavior.
 - **Test fixtures, demos and docs** that show vulnerable code on purpose.
-- **Missing rate limits, logging or monitoring** unless they enable a concrete exploit here. Dependency CVEs belong to
+- **Missing rate limits, unbounded loops, cost or token exhaustion, missing logging or monitoring.** Denial of
+  service and resource exhaustion (LLM06 Unbounded Consumption, ASI08, CWE-400) and a missing audit log are excluded
+  outright in every guide and every mode; a missing max-turns or budget cap is not reported. Dependency CVEs belong to
   [supply-chain.md](supply-chain.md).
-
-Unbounded loops (LLM06, ASI08, CWE-400) are reportable only on a path reachable by low-trust callers with no max
-turns, budget or rate limit; a local CLI on the user's own account is not a finding.
 
 When you cannot show the source, the path, the sink and the missing gate, do not report.
 
