@@ -42,8 +42,9 @@ Run it in the assistant:
 
 ## Dependencies
 
-Only the assistant is required. Everything else adds coverage. The skill runs
-what is installed, installs nothing, and the report says what ran.
+Only the assistant is required. Everything else comes from additional tools —
+see the dependency table. The skill runs what is installed, installs nothing,
+and the report says what ran.
 
 > [!IMPORTANT]
 > **Install `trufflehog`, `gitleaks` and `jq`.** Only the two scanners let the
