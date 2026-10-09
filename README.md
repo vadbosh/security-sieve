@@ -4,8 +4,8 @@ A security-review skill for Claude Code, Codex and Opencode that **reports only
 vulnerabilities an attacker can exploit**.
 
 It works in two passes. First it collects candidates. Then it checks each
-candidate again, on its own, trying to prove it is not a vulnerability. Only a
-candidate that survives, scored 8 of 10 or higher, goes into the report.
+candidate again, on its own, trying to prove it is not a vulnerability. Only
+vulnerabilities scored at least 8 of 10 go into the report.
 
 [Русская версия](README.RU.md) · [How it works](docs/guide.en.md)
 
