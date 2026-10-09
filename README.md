@@ -1,5 +1,24 @@
 # security-sieve
 
+> [!CAUTION]
+> ## ⚠️ THE MODEL DECIDES WHAT THIS REVIEW FINDS
+>
+> **The same skill on the same code finds different vulnerabilities on
+> different models.** One multi-tenant API with 7 confirmed vulnerabilities,
+> reviewed whole:
+>
+> | Model | Found |
+> |---|---|
+> | Claude Opus | 5 of 7, and 1 more as a suspicion |
+> | GPT-6 | 5 of 7 — not the same 5 |
+> | GPT-5, GPT-5.6 | 2–3 of 7; every bug where one customer reads or changes another's data was missed |
+>
+> **Run it on the strongest model you have, and at its highest reasoning
+> level.** For anything that matters, run it on two different strong models
+> and merge the reports. An empty report from a weaker model does not mean
+> the code is safe. The skill names its model when it starts, and the report
+> names it too.
+
 A security-review skill for Claude Code, Codex and Opencode that **reports only
 vulnerabilities an attacker can exploit**.
 
@@ -10,18 +29,10 @@ vulnerabilities scored at least 8 of 10 go into the report.
 Installation tested on Linux, macOS and Windows — in the `bash:3.2` image and
 with PowerShell 7; real macOS and Windows PowerShell 5.1 are untested.
 
-> [!IMPORTANT]
-> **The model matters.** The method was tested on Claude Opus. Once, Sonnet
-> re-checked the same four suspicions as Opus. It confirmed the same four
-> vulnerabilities, with two differences. It did not notice that a stolen
-> token keeps working after a password change. And it kept one false
-> suspicion in the report as "needs verification", where Opus dropped it.
-> Codex on GPT-5 reviewed the same repository from start to finish once. It
-> found two of the four vulnerabilities and missed both cases where one
-> customer could read or change another customer's data. Other models were
-> not tested. Run the review on
-> the strongest model you have. The skill names its model when it starts, and
-> the report names it too.
+The refutation step alone was also compared. Sonnet re-checked the same four
+suspicions as Opus and confirmed the same vulnerabilities. It missed that a
+stolen token keeps working after a password change, and it kept one false
+suspicion that Opus dropped.
 
 [Русская версия](README.RU.md) · [How it works](docs/guide.en.md)
 

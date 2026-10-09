@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.8 — 2026-10-09
+
+- **The README opens with a red CAUTION block: the model decides what the
+  review finds.** On one API with 7 confirmed vulnerabilities, Claude Opus
+  found 5, GPT-6 found 5 others in part, GPT-5 and GPT-5.6 found 2–3 and
+  missed every cross-customer bug. The block says to use the strongest model
+  at its highest reasoning level, and two models for code that matters.
+
 ## 1.3.7 — 2026-10-09
 
 - **A report never replaces another: Step 0 gives the command.** The rule
