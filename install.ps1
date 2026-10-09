@@ -155,7 +155,7 @@ foreach ($dir in $dirs) {
 
 # The secret scanners are the only way a review sees git history; without them
 # a key deleted in an old commit is never found. Say so loudly, every install.
-$missing = @('trufflehog', 'gitleaks') | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) }
+$missing = @('trufflehog', 'gitleaks', 'jq') | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) }
 Say ''
 # Claude Code on Windows runs the Bash tool through Git Bash; without Git for
 # Windows it uses PowerShell, and the scanner commands in the skill (bash) do
@@ -173,19 +173,14 @@ if ($missing) {
     Warn '  ┌─ STRONGLY RECOMMENDED ─────────────────────────────────────────'
     Warn "  │ Not installed: $($missing -join ' ')"
     Warn '  │ Without trufflehog or gitleaks the review cannot see secrets'
-    Warn '  │ in git history; reports will say "NOT scanned".'
+    Warn '  │ in git history; reports will say "NOT scanned". Without jq,'
+    Warn '  │ trufflehog, semgrep and trivy are skipped.'
     Warn '  │   https://github.com/trufflesecurity/trufflehog/releases'
     Warn '  │   https://github.com/gitleaks/gitleaks/releases'
+    Warn '  │   https://jqlang.org/download/'
     Warn '  └────────────────────────────────────────────────────────────────'
 } else {
-    Ok '  secret scanners: trufflehog and gitleaks found'
-}
-if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-    foreach ($t in @('trufflehog', 'semgrep', 'trivy')) {
-        if (-not (Get-Command $t -ErrorAction SilentlyContinue)) { continue }
-        Warn "  jq is not installed: the skill skips $t, whose raw output can carry"
-        Warn '  secret values or source lines. Install jq to use it.'
-    }
+    Ok '  trufflehog, gitleaks and jq found'
 }
 
 Say ''

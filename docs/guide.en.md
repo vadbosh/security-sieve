@@ -141,8 +141,8 @@ Needs-verification items and findings outside the diff do not count.
   as the older location kept for compatibility. The installer uses
   `~/.codex/skills`, like the author's other skill repositories; for the new
   location run `./install.sh --skills-dir ~/.agents/skills`.
-- Both installers warn when `trufflehog` or `gitleaks` is missing, and when
-  `trufflehog` is there without `jq`. On Windows without bash, `install.ps1`
+- Both installers warn, in a coloured box, when `trufflehog`, `gitleaks` or
+  `jq` is missing. On Windows without bash, `install.ps1`
   prints a "BASIC REVIEW" notice.
 
 Claude Code ships a built-in `/security-review` command that reviews the

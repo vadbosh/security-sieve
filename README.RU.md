@@ -43,23 +43,26 @@ Windows:
 что установлено, сам ничего не ставит, а в отчёте пишет, что отработало.
 
 > [!IMPORTANT]
-> **Установите `trufflehog` и `gitleaks`.** Только через них ревью видит
-> историю git: ключ, удалённый три коммита назад, по-прежнему лежит в каждом
-> клоне. Без них в отчёте будет строка «Secrets in git history: NOT scanned».
+> **Установите `trufflehog`, `gitleaks` и `jq`.** Только через эти два сканера
+> ревью видит историю git: ключ, удалённый три коммита назад, по-прежнему лежит
+> в каждом клоне. Без них в отчёте будет строка «Secrets in git history: NOT
+> scanned». `jq` не даёт значениям секретов попасть к модели; без него
+> `trufflehog`, `semgrep` и `trivy` пропускаются.
 >
 > ```bash
-> brew install trufflehog gitleaks
+> brew install trufflehog gitleaks jq
 > ```
 >
 > Для других систем: [trufflehog](https://github.com/trufflesecurity/trufflehog/releases),
-> [gitleaks](https://github.com/gitleaks/gitleaks/releases).
+> [gitleaks](https://github.com/gitleaks/gitleaks/releases),
+> [jq](https://jqlang.org/download/).
 
 | Инструмент | Нужен | Что даёт | Без него |
 |---|---|---|---|
 | Claude Code, Codex или Opencode | да | запускает скилл | — |
 | `git` | для режима Diff | merge base, дифф ветки, неотслеживаемые файлы | Режима Diff нет; файлы и каталоги проверяются как обычно |
 | `bash` | для сканеров | запускает команды сканеров. На Windows — Git Bash | **Базовая проверка**: модель читает код, сканеры не запускаются. Об этом говорят и установщик, и отчёт |
-| `jq` | для `trufflehog`, `semgrep`, `trivy` | читает их вывод без значений секретов и цитат исходника | Эти три пропускаются; `gitleaks` и `checkov` работают |
+| [`jq`](https://jqlang.org/download/) | настоятельно рекомендуется | читает их вывод без значений секретов и цитат исходника | Эти три пропускаются; `gitleaks` и `checkov` работают |
 | [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | настоятельно рекомендуется | секреты во всех коммитах и в ещё не закоммиченных файлах | Секрет находится, только если он в файле, который читает модель |
 | [`gitleaks`](https://github.com/gitleaks/gitleaks) | настоятельно рекомендуется | то же по другим правилам; значения скрывает `--redact` | То же, что выше. Историю git покрывает и один из двух |
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | по желанию | паттерны кода для многих языков. Скачивает правила из реестра Semgrep | Модель идёт по коду от точек входа; на большом дереве может пропустить далёкую опасную операцию |

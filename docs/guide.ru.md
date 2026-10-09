@@ -146,8 +146,8 @@ scanners (no bash shell)».
   помечен как старый путь, оставленный для совместимости. Установщик пишет в
   `~/.codex/skills`, как и другие репозитории скиллов автора; чтобы поставить
   в новое место, запустите `./install.sh --skills-dir ~/.agents/skills`.
-- Оба установщика предупреждают, если нет `trufflehog` или `gitleaks`, и если
-  `trufflehog` есть, а `jq` нет. На Windows без bash `install.ps1` печатает
+- Оба установщика предупреждают цветной рамкой, если нет `trufflehog`,
+  `gitleaks` или `jq`. На Windows без bash `install.ps1` печатает
   предупреждение «BASIC REVIEW».
 
 В Claude Code встроена команда `/security-review`, которая проверяет дифф

@@ -43,23 +43,26 @@ Only the assistant is required. Everything else adds coverage. The skill runs
 what is installed, installs nothing, and the report says what ran.
 
 > [!IMPORTANT]
-> **Install `trufflehog` and `gitleaks`.** Only they let the review see git
-> history: a key deleted three commits ago is still in every clone. Without
-> them the report says "Secrets in git history: NOT scanned".
+> **Install `trufflehog`, `gitleaks` and `jq`.** Only the two scanners let the
+> review see git history: a key deleted three commits ago is still in every
+> clone. Without them the report says "Secrets in git history: NOT scanned".
+> `jq` keeps secret values out of the model's view; without it `trufflehog`,
+> `semgrep` and `trivy` are skipped.
 >
 > ```bash
-> brew install trufflehog gitleaks
+> brew install trufflehog gitleaks jq
 > ```
 >
 > Other systems: [trufflehog](https://github.com/trufflesecurity/trufflehog/releases),
-> [gitleaks](https://github.com/gitleaks/gitleaks/releases).
+> [gitleaks](https://github.com/gitleaks/gitleaks/releases),
+> [jq](https://jqlang.org/download/).
 
 | Tool | Required | Adds | Without it |
 |---|---|---|---|
 | Claude Code, Codex or Opencode | yes | runs the skill | — |
 | `git` | for diff mode | the merge base, the branch diff, untracked files | No diff mode; files and directories are still reviewed |
 | `bash` | for scanners | runs the scanner commands. On Windows: Git Bash | **Basic review**: the model reads the code, no scanner runs. The installer and the report say so |
-| `jq` | for `trufflehog`, `semgrep`, `trivy` | reads their output without secret values and quoted source lines | Those three are skipped; `gitleaks` and `checkov` still run |
+| [`jq`](https://jqlang.org/download/) | strongly recommended | reads their output without secret values and quoted source lines | Those three are skipped; `gitleaks` and `checkov` still run |
 | [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | strongly recommended | secrets in every commit and in files not committed yet | A secret is found only if it is in a file the model reads |
 | [`gitleaks`](https://github.com/gitleaks/gitleaks) | strongly recommended | the same, with other rules; values masked by `--redact` | Same as above. One of the two already covers git history |
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | optional | code patterns in many languages. Downloads its rules from the Semgrep registry | The model follows the code from the entry points; on a large tree it may miss a far sink |
