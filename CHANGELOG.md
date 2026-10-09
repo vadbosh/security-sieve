@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 — 2026-10-09
 
 - **`references/injection.md` line 235 works in GNU grep.** The upstream pattern
   `"\\.query\\(.*\\+"` failed with "Unmatched ( or \(": in a basic regular
