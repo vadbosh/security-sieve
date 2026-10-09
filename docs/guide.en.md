@@ -111,6 +111,23 @@ bash shell)".
 
 ## The report
 
+Before the review starts, the skill asks in one dialog where the report goes,
+in which format and in which language:
+
+| Question | Options | Default |
+|---|---|---|
+| Where | `~/security-reviews/<repo>-<date>.<ext>`; a path you name; chat only | `~/security-reviews/…` |
+| Format | `md`; `txt` (plain text, 80 columns); `html` (one file, inline styles, no scripts or external resources) | `md` |
+| Language | the language of the session; English | the language of the session |
+
+Inside the reviewed repository only if you choose it: a report lists every
+weakness, and in a checkout it is one `git add -A` away from a commit. A
+subagent or a run nobody can answer uses the defaults and says so in the
+report. An existing report is never overwritten: when the name is taken, the
+skill picks one that tells the reports apart — by scope, time or number. Paths,
+code, CWE and OWASP identifiers stay untranslated, and no format ever contains
+a secret value.
+
 Each finding has the file and line, the CWE, the OWASP Top 10:2025 category,
 an exploit scenario, the refutation score, the fix with code, and its
 variants — the same pattern elsewhere in the repository. The summary lists the

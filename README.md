@@ -40,6 +40,13 @@ Run it in the assistant:
 /security-sieve threat model of the upload service
 ```
 
+Before it starts, the skill asks three questions:
+
+- where to write the report — by default `~/security-reviews/`, outside the
+  repository;
+- the format — Markdown, plain text or a single HTML file;
+- the language — the language of the session or English.
+
 ## Dependencies
 
 Only the assistant is required. Everything else comes from additional tools —

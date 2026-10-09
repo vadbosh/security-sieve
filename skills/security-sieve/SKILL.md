@@ -36,7 +36,8 @@ tell which three.
 | Threat model, attack surface, "is this CVE exploitable", dependency triage | **Threat model** | `references/threat-modeling.md` |
 | IAM, secrets, Vault, mTLS, Kubernetes, Terraform, CI pipelines | **Infrastructure** | the guide in `infrastructure/` |
 
-Every mode ends in the same refutation pass (Step 5) and the same report.
+Every mode starts with Step 0 — where the report goes, in which format and
+language — and ends in the same refutation pass (Step 5) and the same report.
 
 ## Scope: research vs. reporting
 
@@ -54,7 +55,33 @@ Before flagging anything, learn from the codebase:
 
 ## Process
 
-### 1. Fix the scope
+### 0. Ask where the report goes
+
+Before Step 1, ask the user three things **in one dialog**, with the
+assistant's structured question tool — `AskUserQuestion` in Claude Code,
+`request_user_input` in Codex, `question` in Opencode; where none exists, as a
+numbered list the user answers with one line:
+
+| Question | Options | Recommended |
+|----------|---------|-------------|
+| Where to write the report | outside the repository: `~/security-reviews/<repo>-<YYYY-MM-DD>.<ext>`; a path the user names; chat only | `~/security-reviews/…` |
+| Format | `md` (Markdown); `txt` (plain text); `html` (one self-contained file) | `md` |
+| Language | the language of the session; English | the language of the session |
+
+- Skip a question the user has already answered in the request.
+- **Inside the reviewed repository only if the user chooses it.** A report
+  names every weakness and where it is; inside a checkout it is one
+  `git add -A` away from being committed, and a public repository publishes it.
+- A subagent or a run nobody can answer: use the recommended options without
+  asking, and say so in the report's first line.
+- Get the date from `date +%F`, not from memory. Make the directory with
+  `mkdir -p` and the file readable only by its owner (`chmod 600`).
+- **Never overwrite a report.** Several reviews can run at once — parallel
+  subagents, a second run on the same repository the same day. Before writing,
+  check whether the file exists, and if it does, choose a name that tells the
+  reports apart: the scope (`-diff`, `-api`, `-terraform`), the time
+  (`-1645`), or a number (`-2`). Pick what a reader of the directory would
+  understand; say the final path in the chat.
 
 **Diff mode.** Find the base, then read every change against it:
 
@@ -317,7 +344,9 @@ original finding with their locations; do not repeat the explanation.
 
 ### 7. Report
 
-Use the output format below. In diff mode, list "Outside the diff" last.
+Use the output format below, in the format, language and place chosen in
+Step 0. In diff mode, list "Outside the diff" last. Then show the user the
+summary block in the chat and the path of the file.
 
 ---
 
@@ -595,6 +624,28 @@ The score is for triage at a glance. It is not CVSS.
 
 No findings: write "No exploitable vulnerabilities found." and list what was
 reviewed and which tools ran, so the reader knows what the empty result covers.
+
+### Formats and language
+
+The template above is Markdown. For the other formats keep the same sections,
+in the same order, with the same fields:
+
+- **`txt`** — plain text, no Markdown markup: headings in capitals with a line
+  of `=` under them, fields as `Location: …`, code indented by four spaces,
+  lines up to 80 characters.
+- **`html`** — one self-contained file: inline `<style>`, no JavaScript, no
+  external fonts, images or scripts, so it opens offline and can be mailed.
+  Escape every quoted piece of code (`&lt;`, `&gt;`, `&amp;`); a finding that
+  quotes an XSS payload must not execute in the report. Severity may be
+  coloured; the text must still say it.
+
+**Language.** Headings, field names and prose follow the chosen language.
+Never translate what the reader must match exactly: paths, `file:line`, code,
+commands, CWE and OWASP identifiers, commit hashes, tool names and their
+messages. The labels VULN-001, VERIFY-001 stay as they are.
+
+**No secret values in any format.** A report names where a credential is —
+file, line, commit, detector — never its value, not even part of it.
 
 ---
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Step 0: the skill asks where the report goes, in which format and
+  language** — one dialog: `~/security-reviews/<repo>-<date>`, a path or chat
+  only; `md`, `txt` or one self-contained `html`; the session's language or
+  English. Inside the reviewed repository only if the user chooses it; an
+  existing report is never overwritten — parallel runs choose distinct names.
+  A run nobody can answer uses the defaults and says so.
 - **The scanner scratch directory is named per repository and never handed
   over through a fixed file.** Each tool call may start a new shell, and two
   reviews on one machine passed the path through the same `/tmp` file: one
