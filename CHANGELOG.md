@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0 — 2026-10-09
+
+- **Every report opens with an assessment notice**, under the title, in every
+  format and language: it is a model's assessment, not a final verdict; a
+  person checks each finding against the code and the deployment before
+  anything is fixed, rotated, published or sent on; what the report does not
+  mention was not proven safe. A report is forwarded without the README.
+
 ## 1.3.9 — 2026-10-09
 
 - **The CAUTION block says the report is an assessment, not a final

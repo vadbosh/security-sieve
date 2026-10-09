@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.9"
+version: "1.4.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -731,6 +731,11 @@ The score is for triage at a glance. It is not CVSS.
 ```markdown
 ## Security review: [file, component or branch]
 
+> **This is an assessment by [model], not a final verdict.** Every finding must
+> be checked by a person against the code and the deployment before anything
+> is fixed, rotated, published or sent on. What this report does not mention
+> was not proven safe.
+
 ### Summary
 - **Scope**: [files / diff base..HEAD / repository]
 - **Model**: [the model that ran the review, and the refuters' model if different]
@@ -800,6 +805,11 @@ messages. The labels VULN-001, VERIFY-001 stay as they are.
 
 **No secret values in any format.** A report names where a credential is —
 file, line, commit, detector — never its value, not even part of it.
+
+**The assessment notice opens every report, in every format and language**,
+right under the title: a report travels without the README that explains it.
+In `txt` it is a paragraph under the title; in `html` a box above the
+summary. Translate it into the report's language; never drop or shorten it.
 
 ---
 
