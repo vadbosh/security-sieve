@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1 — 2026-10-09
+
+- **The scanner status lines reach the chat.** `scan.sh` printed which tools
+  ran, but Claude Code folds command output to a few lines and the model did
+  not repeat them, so the user saw nothing. Step 3 now asks for the `tool`,
+  `ran` and `skip` lines in a code block as soon as the script finishes.
+
 ## 1.5.0 — 2026-10-09
 
 - **Step 3 is a script: `scripts/scan.sh <repo-dir>`.** It lists the

@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.5.0"
+version: "1.5.1"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -237,6 +237,10 @@ bash "<skill-dir>/scripts/scan.sh" "<repo-dir>"    # prints out=<scratch dir> fi
 - `ran <name> rc=… log-errors=N` — a non-zero `rc` is findings for most of
   these tools; `log-errors` above 0 means the run failed: name it as failed.
 - `skip <name>: jq not installed` — its output would carry values or source.
+
+**Show the user the `tool`, `ran` and `skip` lines in the chat**, verbatim in
+a code block, as soon as the script finishes. The assistant folds command
+output to a few lines; without this the user cannot see which scanners ran.
 
 **Run it in the background where the assistant can.** It needs no input from
 the review, and the model reads code meanwhile. In Claude Code start it right
