@@ -130,7 +130,7 @@ scanners (no bash shell)».
 2. Иначе `10 − 4 × High − 1.5 × Medium − 0.5 × Low`, с округлением вниз, но не
    ниже `3`.
 
-Пункты «Needs verification» и находки вне диффа не учитываются.
+Пункты «Needs verification» и находки вне изменений ветки не учитываются.
 
 ## Подробности установки
 
@@ -151,7 +151,7 @@ scanners (no bash shell)».
   `gitleaks` или `jq`. На Windows без bash `install.ps1` печатает
   предупреждение «BASIC REVIEW».
 
-В Claude Code встроена команда `/security-review`, которая проверяет дифф
+В Claude Code встроена команда `/security-review`, которая проверяет изменения
 ветки. У этого скилла другое имя, поэтому встроенная команда остаётся
 доступной.
 
