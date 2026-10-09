@@ -109,6 +109,10 @@ Network use:
   key it finds to the provider, so the skill asks before turning it on.
 - `trufflehog` also runs with `--no-update`. Without it, it first tries to
   replace its own binary, and in a sandbox it then exits without scanning.
+- A web search runs on the assistant provider's side, so a sandbox does not
+  stop it. The skill lets the model search for public names only — a
+  library, a version, an API, a CVE id — and never for code, paths, hosts or
+  values from the repository.
 
 The scanner commands are bash. Windows without Git for Windows has no bash:
 Claude Code uses PowerShell there. The review is then basic: the model reads

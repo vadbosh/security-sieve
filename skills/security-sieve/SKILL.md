@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.3.3"
+version: "1.3.4"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -329,6 +329,15 @@ Two of these talk to the network. `semgrep` downloads its registry rules.
 `trufflehog` without `--no-verification` sends every key it finds to the
 provider's API to test it — ask the user before turning verification on.
 
+**A web search sends its query outside the machine**, in every step, and a
+sandbox does not stop it: the assistant's search runs on the provider's side.
+Checking how a library behaves is right — searching beats guessing — but a
+query names only public things: the library, its version, an API, a class or
+method of that library, a CVE id. Never code from the repository, its paths,
+host names, organisation or project names, endpoint routes, configuration
+keys, or any value. "NLog LoggingConfigurationFileLoader nlog.config Linux case
+sensitive" is a query; a line from `Program.cs` is not.
+
 Each tool's flags change between versions; on an error, read its `--help`
 instead of guessing. A tool that is missing, or still fails after that, is
 skipped: the review goes on without it, and the report's "Tools run" line
@@ -394,6 +403,10 @@ awk '/^### 5\. Refute every candidate/,/^### 6\./; /^## Do not flag/,/^## Severi
 
 Not the other candidates: a refuter that sees them starts comparing instead of
 checking.
+
+A refuter that searches the web names only public things in the query — a
+library, a version, an API, a CVE id — never code, paths, hosts, routes,
+configuration keys or values from the repository.
 
 The refuter's job is to **break** the candidate, not to confirm it:
 

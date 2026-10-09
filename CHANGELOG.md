@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.4 — 2026-10-09
+
+- **Web searches name only public things.** A Codex review searched the web
+  for how NLog loads `nlog.config` on Linux — a good check, and a query that
+  leaves the machine whatever the sandbox says. Step 3 and the refuter brief
+  now allow a library, a version, an API or a CVE id in a query, and never
+  code, paths, hosts, routes, configuration keys or values from the
+  repository.
+
 ## 1.3.3 — 2026-10-09
 
 - **Guide examples no longer read as credentials.** A secrets hook blocked
