@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 — 2026-10-10
+
+- **`scan.sh` opens with a summary that the model pastes as it is.** In 1.5.1
+  the model was asked to show the `tool` and `ran` lines verbatim; it retold
+  them in one sentence and lost which run had failed. The script now prints a
+  few lines between two `━━━` bars — `+ ran`, `- FAILED`, `- skipped`,
+  `- missing`, `- no git` — and writes them to `<out>/summary.txt`. Step 3
+  asks for them in a `diff` code block, where a scanner that ran shows green
+  and a failure red. At a terminal the script colours them itself.
+
 ## 1.5.3 — 2026-10-09
 
 - README: a note on Windows, with links. The scanners exist there —

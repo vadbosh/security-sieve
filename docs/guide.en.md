@@ -86,6 +86,10 @@ by `scripts/scan.sh`, not by the model command by command: the script finds
 every installed tool, runs each one every time, and prints only grouped
 results without secret values.
 
+- The script opens with a short summary between two `━━━` bars: which
+  scanners ran, which failed, which are missing. The skill pastes it into the
+  chat as a `diff` block, so a scanner that ran shows green and one that
+  failed or is missing shows red.
 - Output goes to a temporary directory outside the repository, and the skill
   deletes it once the report is written.
 - In Claude Code the scanners run in the background while the model reads the

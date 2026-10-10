@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.5.3"
+version: "1.6.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -229,18 +229,31 @@ detector or rule, file, line and commit. Raw output stays in the scratch
 directory **outside the repository**.
 
 ```bash
-bash "<skill-dir>/scripts/scan.sh" "<repo-dir>"    # prints out=<scratch dir> first
+bash "<skill-dir>/scripts/scan.sh" "<repo-dir>"    # summary, then out=<scratch dir>
 ```
+
+It opens with a summary of a few lines between two `━━━` bars, also written
+to `<out>/summary.txt`:
+
+```diff
+━━━━━━━━━━━━━━ security-sieve: scanners ━━━━━━━━━━━━━━
++ ran      trufflehog, gitleaks, checkov
+- FAILED   semgrep  (errors in its .log)
+- missing  osv-scanner, trivy
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Paste the summary into the chat as it is, in a `diff` code block**, as soon
+as the script finishes: the block shows `ran` green and every `-` line red.
+Do not retell it in a sentence — measured: a retelling dropped which run had
+failed. The assistant folds command output, so without the block the user
+cannot see which scanners ran. The lines below it are for you:
 
 - `tool <name> missing` — not on the assistant's `PATH` (`~/.local/bin` for
   `pipx` included); the report's "Tools run" line is built from this list.
 - `ran <name> rc=… log-errors=N` — a non-zero `rc` is findings for most of
   these tools; `log-errors` above 0 means the run failed: name it as failed.
 - `skip <name>: jq not installed` — its output would carry values or source.
-
-**Show the user the `tool`, `ran` and `skip` lines in the chat**, verbatim in
-a code block, as soon as the script finishes. The assistant folds command
-output to a few lines; without this the user cannot see which scanners ran.
 
 **Run it in the background where the assistant can.** It needs no input from
 the review, and the model reads code meanwhile. In Claude Code start it right
