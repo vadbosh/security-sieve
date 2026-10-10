@@ -125,9 +125,10 @@
 - **Guide examples no longer read as credentials.** A secrets hook blocked
   Codex from reading `languages/csharp.md`, `infrastructure/kubernetes.md` and
   `infrastructure/ci-cd.md` because example code looked like a secret:
-  `var token = Convert.ToBase64String(…)`, a password in a URL, a base64
-  value, `http_tokens = "optional"`. The examples say the same thing in a form
-  a redactor does not flag; `secrets-redact` finds 0 values in the three files.
+  a `token` variable assigned from a method call, a password in a URL, a
+  base64 value, an `http_tokens` key with a quoted value. The examples say
+  the same thing in a form a redactor does not flag; `secrets-redact` finds 0
+  values in the three files.
   The copies from Sentry are left as they are.
 - **The C# guide covers fallback literals**: `cfg["XSecret"] ?? "…"` or a
   ternary ending in `: "…"`. A real review found such a key that neither
