@@ -37,7 +37,9 @@
 > It confirmed 16 vulnerabilities and listed what it did not reach; the
 > single pass confirmed 17. Each found what the other missed: the single
 > pass a remote code execution, the parts run seven holes in business logic.
-> For important code, use both.
+> For important code, run both as two separate reviews and ask to merge the
+> two reports. One run doing both cost USD 80 and confirmed only 6: two
+> searches found more than one session could check.
 
 A security-review skill for Claude Code, Codex and Opencode that **reports only
 vulnerabilities an attacker can exploit**.

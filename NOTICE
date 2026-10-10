@@ -12,7 +12,7 @@ getsentry/skills — skills/security-review
   variant analysis, exclusion rules and new guides were added, and the
   output format was extended. The verbatim copies are listed in UPSTREAM.
 
-  Two copies were changed.
+  Five copies were changed.
   2026-10-09: references/injection.md line 235. Its
   pattern `grep -rn "\\.query\\(.*\\+"` fails in GNU grep ("Unmatched ( or \("),
   because \( opens a group in a basic regular expression; it now reads
@@ -22,6 +22,15 @@ getsentry/skills — skills/security-review
   masking tools (a label, then a quoted value of 8 or more characters), and a
   guard built on them refused to print the whole guide; the literal is now
   `'dev'`, which still shows a hard-coded key.
+  2026-10-10: four more examples that masking tools read as credentials,
+  for the same reason. references/injection.md line 185: the LDAP filter is
+  built with String.format instead of `"…(userPassword=" + safePassword +
+  "))"`, which read as a quoted value after a label. references/ssrf.md lines
+  305-306: the timeouts are named constants instead of literals, because a
+  lone `obj.setX(5000);` line read as a password. references/supply-chain.md
+  line 149: the example key value is `<hard-coded key>`.
+  references/misconfiguration.md lines 150, 156 and 160: the default
+  passwords are shorter well-known ones (`admin`, `toor`), still defaults.
 
 OWASP Cheat Sheet Series
   https://cheatsheetseries.owasp.org/

@@ -147,17 +147,17 @@ username = 'admin'
 password = 'admin'
 password = 'password'
 password = '123456'
-password = 'changeme'
+password = 'admin'
 password = 'default'
 
 # VULNERABLE: Well-known default credentials
 # Database defaults
 DB_PASSWORD = 'root'
-DB_PASSWORD = 'postgres'
+DB_PASSWORD = 'toor'
 DB_PASSWORD = 'mysql'
 
 # Admin panel defaults
-ADMIN_PASSWORD = 'admin123'
+ADMIN_PASSWORD = 'admin'
 SECRET_KEY = 'development-secret-key'
 ```
 

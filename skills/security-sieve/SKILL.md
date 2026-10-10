@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.7.1"
+version: "1.8.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -79,25 +79,19 @@ certain" rather than guess. The report's **Model** field follows the same
 rule.
 
 **Count the source files before asking**, in code mode on a repository or a
-directory. Tests, vendored and generated code do not count:
+directory, with the script that ships with this skill. Tests, vendored and
+generated code do not count. It prints `files=<N>`, then the modules — groups
+of at most 500 files, split down the directory tree until none is larger:
 
 ```bash
-cd "<repo-dir>" && { git ls-files 2>/dev/null || find . -type f -not -path '*/.git/*'; } |
-  grep -Ev '(^|/)(tests?|__tests__|spec|vendor|node_modules|dist|build|target|generated)/|\.min\.js$' |
-  grep -Ec '\.(java|kt|scala|cs|py|js|jsx|ts|tsx|php|go|rb|rs|c|cc|cpp|swift|tf)$'
+bash "<skill-dir>/scripts/modules.sh" "<repo-dir>"
 ```
 
-**Above 500**, the dialog below gets a fourth question, scope, and the line
-before it says what the size means, with the measured numbers and their date
-— not a guess. In English:
-
-```
-<N> source files. On Claude Opus (2026-10-10), 144 C# files took 8 minutes.
-3888 Java files took 27 minutes and USD 42 in one pass, which looked at about
-one file in nine, chosen by the model; in parts, 33 minutes and USD 57, with
-a list of what it did not cover. The two found different holes. Narrowing
-the scope is cheaper and says what was covered.
-```
+**Above 500**, the dialog below gets a fourth question, scope, and the
+script prints `say-to-user:` lines first: what a review of this size cost
+when it was measured, with the date. Say all of them, in the session's
+language, before the questions — not only the file count: two Codex runs out
+of three cut the text to that and left the reader nothing to decide by.
 
 The scope options, recommended first:
 
@@ -108,13 +102,29 @@ The scope options, recommended first:
 | Whole repository at once | one pass; the model chooses what to read |
 | Only the branch's changes | diff mode |
 
-List the modules for the second option with the same file filter, grouped
-by the build's own modules (`pom.xml` / `build.gradle` / `*.csproj` /
-`package.json` / `go.mod` directories) or, failing that, by the directories
-below the longest common prefix of the source paths — in Java, the packages
-below the root package. Split a group that still holds more than 500 files
-one level deeper. At 500 files or below, ask no scope question: a review of
-that size reads most of the code anyway.
+**For important code, advise two separate reviews**, after the options and
+in words a person who has not read this skill understands — advice, not an
+option. In English:
+
+```
+For important code: run two separate reviews of the same repository, one
+"whole repository at once" and one "in parts", then ask to merge the two
+reports. On 3888 Java files they confirmed 17 and 16 vulnerabilities, about
+25 different ones together, for 60 minutes and USD 99. Each found holes the
+other missed.
+```
+
+Do not run both in one review. Tried on the same code (2026-10-10), one run
+doing both cost USD 80 and confirmed 6: the two searches found more
+candidates than one session could refute, and 20 were left unverified —
+among them injections the separate runs had confirmed.
+
+For the second option, list the modules `modules.sh` printed, largest first,
+as they are; a build's own modules (`pom.xml`, `build.gradle`, `*.csproj`,
+`package.json`, `go.mod` directories) may name them better. Never offer a
+group of more than 500 files: a prose rule gave "src 3599" and "server 3473",
+which narrow nothing. At 500 files or below, ask no scope question: a review
+of that size reads most of the code anyway.
 
 Then, before Step 1, ask the user three things — four with the scope —
 **in one dialog**, with the
@@ -136,7 +146,8 @@ For example: "1 3 1".
 ```
 
 With the scope question, the list gets a fourth line —
-`4. Scope: 1) in parts, with a map  2) selected modules  3) whole repository at once  4) branch changes only`
+`4. Scope: 1) in parts, with a map  2) selected modules  3) whole repository at once  4) branch changes only`,
+followed by the advice for important code (above) on lines of its own
 — and the example becomes four digits.
 
 The questions and their options:
@@ -147,7 +158,11 @@ The questions and their options:
 | Format | `md` (Markdown); `txt` (plain text); `html` (one self-contained file) | `md` |
 | Language | the language of the session; English | the language of the session |
 
-- Skip a question the user has already answered in the request.
+- Skip a question the user has already answered in the request. For the
+  scope question that takes an option by name — in parts, these modules, one
+  pass, the branch's changes. "Review the whole repository" names the
+  target, not the way to review it: ask. A Codex run read it as "one pass"
+  and skipped the question, cost line and all.
 - **Inside the reviewed repository only if the user chooses it.** A report
   names every weakness and where it is; inside a checkout it is one
   `git add -A` away from being committed, and a public repository publishes it.
@@ -262,6 +277,20 @@ Rules learned on that run (five parts, about 45 candidates):
   three of five parts short there. Do not re-run it in the same session.
   Name what it did not reach under "Not covered", and offer the user a
   separate run of that module.
+
+**Merging two reports** — when the user asks to combine two finished
+reviews of the same code, typically the one-pass and the parts review
+advised in Step 0. This is not a review: read the two report files, run no
+scanner, refute nothing new.
+
+1. One finding per location and class. Where both reports have it, keep the
+   higher refutation score and the clearer scenario.
+2. Each finding gets a **Found by** line: which review, or both.
+3. A candidate unverified in one report and confirmed in the other is a
+   finding; unverified in both, it stays unverified.
+4. Coverage is the union; "Not covered" lists only what neither reached. The
+   summary names both source reports and what each cost.
+5. Write the merged report under a new name; never overwrite either source.
 
 The report says what was covered: a **Coverage** line in the summary with
 the modules reviewed, the ones left out and why, and a "Not covered"
@@ -862,6 +891,7 @@ The score is for triage at a glance. It is not CVSS.
 - **Location**: `file.py:123`
 - **Class**: CWE-89, OWASP A05:2025 Injection
 - **Refutation score**: 9/10
+- **Found by**: [which review, or both — only in a merged report]
 - **Issue**: [what is wrong]
 - **Exploit scenario**: [who, which input, what happens]
 - **Evidence**:

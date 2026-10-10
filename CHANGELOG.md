@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.8.0 — 2026-10-10
+
+- **`scripts/modules.sh` counts the source files and lists the modules.**
+  Groups of at most 500 files, split down the directory tree until none is
+  larger; above 500 it also prints the measured cost of a review that size
+  as `say-to-user:` lines. Written as rules in prose, the module list came
+  out as "src 3599" and "server 3473", and two Codex runs of three dropped
+  the cost from the question. Bash 3.2 and busybox awk compatible
+  (`index(s, "")` is 0 there).
+- **"Review the whole repository" no longer skips the scope question**: it
+  names the target, not the way to review it.
+- **For important code the scope question advises two separate reviews**
+  — one pass and in parts — and a merge of their reports. SKILL.md now says
+  how to merge two finished reports. A single run doing both was built and
+  tried on 3607 Java files and dropped: it cost USD 80 and confirmed 6, with
+  20 candidates left unverified, against 17 and 16 confirmed by the two
+  separate runs for USD 99 together.
+- **Four upstream guides read as credentials no more**:
+  `references/injection.md` 185, `ssrf.md` 305–306, `supply-chain.md` 149,
+  `misconfiguration.md` 150, 156, 160 (F240). The guard refused to print
+  them, which in Codex is the only way to read a file. Recorded in `NOTICE`
+  and `UPSTREAM`.
+- Measured in that last run: with the rule that configuration files are read
+  by key (1.7.0) and env2hell 0.13.18, `gitleaks` found no secret value in
+  the session's transcript; the two earlier runs left 10 and 15.
+
 ## 1.7.1 — 2026-10-10
 
 - `languages/python.md` line 150: the example `app.secret_key = '…'` now

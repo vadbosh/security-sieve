@@ -302,8 +302,8 @@ public class SafeURLConnection {
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setInstanceFollowRedirects(false);
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(30000);
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
 
         return connection;
     }

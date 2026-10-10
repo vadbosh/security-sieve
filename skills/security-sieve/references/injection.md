@@ -182,7 +182,7 @@ Block or escape: `& | ; $ > < \ ! ' " ( ) { } [ ] \n \r`
 ```java
 // SAFE: Escape special characters
 String safeName = LdapEncoder.filterEncode(userName);
-String filter = "(&(uid=" + safeName + ")(userPassword=" + safePassword + "))";
+String filter = String.format("(&(uid=%s)(userPassword=%s))", safeName, safePassword);
 ```
 
 **Characters to Escape in LDAP**

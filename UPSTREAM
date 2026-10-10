@@ -18,11 +18,14 @@ file 920b7dfb86dc696002d31022c1f7665ef602dd1ed76f1124ad937d488ce2b381 references
 file be9946daf389ad594fbc4065246ff334c389da1e2cf593180ca150b0204287fb references/deserialization.md
 file e12d3c9f713614223ce797935f3a4c2ac1a7f1fcf0ea24e865a1a70efeab4fb9 references/error-handling.md
 file a0a001fb79fe9f1169fa3ba523225164744c42d8779341f15d3d0fc349185f2a references/file-security.md
-# changed 2026-10-09: line 235, a grep pattern GNU grep rejected — see NOTICE
-file e65e466f09c2139628df2c752a1d17c336a52070be2f8aade7255e2f5342c276 references/injection.md
+# changed 2026-10-09: line 235, a grep pattern GNU grep rejected; 2026-10-10: line 185, a concatenation read as a password — see NOTICE
+file 22bee6570bf03f5859ac4393ea9123cae343fc42a5c3f0edabb8eba31c941032 references/injection.md
 file acca4eeebfc451bb62a7c085d1121ffa443e8cd0831548c2ae6f7fc606056cbc references/logging.md
-file 919c44e309eaa6427a8bb44a2ed645fbf2b46d9dfe86a0fcdb2d084201898390 references/misconfiguration.md
+# changed 2026-10-10: lines 150, 156, 160, example passwords of 8+ characters — see NOTICE
+file 606162674a10f7299c0f591deb99a84abfff1a27c9db479827c110b5e175e7aa references/misconfiguration.md
 file d2ac69d91ade6df9c4bf89b2be0d203651d1a0cc5a67d03db8013af52c8ffe6b references/modern-threats.md
-file 646a8244fa61997b9b4f093169be1af4f94e6a3d04dcae8d426bb821870b2bff references/ssrf.md
-file ef3000d91763ccdddfbce2660943c4090b4c16b3b33afe980f4e10947729e1f1 references/supply-chain.md
+# changed 2026-10-10: lines 305-306, Java calls a masking tool read as passwords — see NOTICE
+file 6e87fe7cd1a63a194d853e54866706f98609bb013ed1f0e27a67e1bb289d450c references/ssrf.md
+# changed 2026-10-10: line 149, an example key value — see NOTICE
+file c5d98e64b38170d4ba611640e1711b7ae4e31dce26be8c61b1e809e6585279e1 references/supply-chain.md
 file 4735df1e581b757b078605fbc27d37e85cfe182c45ab326c9e536c71a930680c references/xss.md
