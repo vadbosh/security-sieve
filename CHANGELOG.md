@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.2 — 2026-10-10
+
+- Documentation caught up with 1.7.0–1.8.1. README and `docs/guide.*` said
+  the skill asks three questions; above 500 source files it asks four. The
+  guides now also describe the parts mode, refuters on the session's model,
+  the narrow re-run of a stopped refuter, the refutation limit of 12,
+  configuration files read by key, the Coverage, "Unverified candidates" and
+  "Not covered" parts of the report, and how two reports are merged. The
+  skill itself is unchanged.
+
 ## 1.8.1 — 2026-10-10
 
 - **A refuter stopped early is asked again, once, in other words.** The

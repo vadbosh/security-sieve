@@ -26,6 +26,14 @@ alone. The skill therefore separates finding from judging:
 | a threat model, "is this CVE exploitable" | Threat model | STRIDE, attack surface, CVE and dependency triage |
 | IAM, Kubernetes, Terraform, CI pipelines | Infrastructure | The guide for that kind of configuration |
 
+Above 500 source files, code mode asks for the scope first (see "The report").
+In parts, the skill first maps the whole repository. The map lists the
+modules, the code every module trusts and the hits of the guide's search
+patterns. Trusted code means the authentication filter, where the caller's
+identity comes from and the shared permission checks. Then each module gets its own pass with that map, and one more pass
+looks at the borders between modules. Searches for variants still cover the
+whole repository.
+
 ## The refutation pass
 
 Where the assistant can start subagents, each candidate gets a subagent of its
@@ -41,6 +49,21 @@ gets, in full text:
 
 It does not see the other candidates. Without subagents the skill takes the
 candidates one at a time and re-reads the code for each.
+
+In Claude Code each subagent runs on the session's own model. Without that, a
+configured default model for subagents applies: in one review, every
+refutation ran on Sonnet while the review ran on Opus.
+
+The model provider's safety system sometimes stops a subagent halfway: the
+text of a refutation reads like attack planning. The skill then asks once
+more, with questions of fact about the code only: where the value comes from,
+which checks run before the sink. Each answer quotes a file and line, and the
+skill scores the candidate from them. Stopped twice, the candidate goes
+under "Needs verification" with that reason.
+
+In parts mode the skill refutes the strongest 12 candidates and lists the
+rest as unverified: one session cannot check everything that several passes
+find.
 
 | Score | Outcome |
 |---|---|
@@ -98,6 +121,10 @@ results without secret values.
   `--redact`; `trufflehog`, which prints the secret in its `Raw` field, is read
   through `jq`, and skipped when `jq` is missing. Secret values never reach the
   model, and the skill needs no redaction tool on the host.
+- Configuration files (`application.yml`, `.env`, `appsettings.json`,
+  `*.tfvars`) are read by key: file, line and key name, never the value — not
+  even through a masking tool of the host. Two reviews that printed such a
+  file put live keys into their session logs.
 - Secret scanners run twice: on git history (`git` mode) and on the working
   tree (`filesystem` / `dir` mode). The git modes do not see untracked or
   staged files. In a directory that is not a repository only the working-tree
@@ -135,13 +162,21 @@ bash shell)".
 Before the review starts, the skill names the model it runs on and asks in one
 dialog where the report goes, in which format and in which language. Where the
 assistant has no question tool — Codex in its default mode — the questions come
-as a numbered list, and you answer with three digits:
+as a numbered list, and you answer with three digits, or four with the scope:
 
 | Question | Options | Default |
 |---|---|---|
 | Where | `~/security-reviews/<repo>-<date>.<ext>`; a path you name; chat only | `~/security-reviews/…` |
 | Format | `md`; `txt` (plain text, 80 columns); `html` (one file, inline styles, no scripts or external resources) | `md` |
 | Language | the language of the session; English | the language of the session |
+| Scope — only above 500 source files | in parts, with a map; selected modules; the whole repository in one pass; the branch's changes | in parts |
+
+The scope question comes only for a large repository. `scripts/modules.sh`
+counts the source files, without tests and vendored code, and splits them into
+modules of at most 500 files. Above 500 the skill first says what a review of
+that size cost when it was measured, then lists the modules. For important
+code it advises two separate reviews, one pass and in parts, and a merge of
+their reports: each found holes the other missed.
 
 Inside the reviewed repository only if you choose it: a report lists every
 weakness, and in a checkout it is one `git add -A` away from a commit. A
@@ -174,6 +209,19 @@ an exploit scenario, the refutation score, the fix with code, and its
 variants — the same pattern elsewhere in the repository. The summary names
 the model that ran the review, lists the tools that ran, and says whether git
 history and uncommitted files were scanned for secrets.
+
+A narrowed scope or a review in parts adds three things to the report:
+
+- a **Coverage** line in the summary;
+- "Unverified candidates": one line each for candidates past the refutation
+  limit;
+- "Not covered": modules and kinds of code the review did not reach, and parts
+  the provider's safety system stopped.
+
+To combine two finished reviews of the same code, ask the skill to merge them.
+It reads the two reports and runs no new review. A finding that both have
+appears once, with the higher score and a **Found by** line. A candidate one
+review left unverified and the other confirmed becomes a finding.
 
 The posture score is a formula, so the same findings always give the same
 score:

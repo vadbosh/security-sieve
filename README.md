@@ -86,12 +86,17 @@ Run it in the assistant:
 /security-sieve threat model of the upload service
 ```
 
-Before it starts, the skill asks three questions:
+Before it starts, the skill asks three questions, and a fourth for a large
+repository:
 
 - where to write the report — by default `~/security-reviews/`, outside the
   repository;
 - the format — Markdown, plain text or a single HTML file;
-- the language — the language of the session or English.
+- the language — the language of the session or English;
+- above 500 source files, the scope — in parts, selected modules, the whole
+  repository in one pass, or only the branch's changes. Before this question
+  the skill says what a review of that size cost when it was measured, and
+  lists the modules to choose from.
 
 ## Dependencies
 
