@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.1 — 2026-10-10
+
+- The 1.3.3 entry of this changelog quoted the two guide examples that had
+  looked like secrets, so the same secrets hook refused to print
+  `CHANGELOG.md` itself. The entry now describes those examples in words;
+  `secrets-redact` finds 0 values in the file. The skill is unchanged.
+
 ## 1.6.0 — 2026-10-10
 
 - **`scan.sh` opens with a summary that the model pastes as it is.** In 1.5.1
