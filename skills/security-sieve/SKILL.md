@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.8.0"
+version: "1.8.1"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -539,8 +539,8 @@ This is the step that makes the report trustworthy. Each candidate is checked
   (`"opus"` in an Opus session). Without it a configured default —
   `CLAUDE_CODE_SUBAGENT_MODEL` — silently runs every refuter on another
   model: measured, a whole review's refuters ran on Sonnet while the session
-  ran on Opus, and Sonnet's safeguards stopped one of them halfway. If a
-  refuter still fails, re-check that candidate yourself and say so;
+  ran on Opus, and Sonnet's safeguards stopped one of them halfway. A
+  refuter stopped early gets one narrow re-run (below);
 - otherwise take them one at a time, and re-read the code for each one
   instead of relying on what you concluded during the hunt.
 
@@ -568,6 +568,22 @@ awk '/^### 5\. Refute every candidate/,/^### 6\./; /^## Do not flag/,/^## Severi
 
 Not the other candidates: a refuter that sees them starts comparing instead of
 checking.
+
+**A refuter stopped early is asked again, once, the same question in other
+words.** The model provider's safety system ends a turn that reads like attack
+planning (`stop_reason: refusal`, or a subagent that returns no verdict) — it
+stopped 2 of 11 refuters in one review of a Spring service. Start one new
+refuter with a narrow brief: only questions of fact about the code, each
+answered with a `file:line` quote — where the value comes from, which checks
+run between the entry point and the sink, what each check compares — and no
+attack wording, no scenario to write, no payload. For example: "In
+`SsoController.java`, `POST /sso/token`: where does `email` come from? Which
+checks run before `ssoTokenApi` is called? Is `email` compared with the
+partner in the session? Quote file:line." Score the candidate yourself from
+those facts, and write in the finding that the verdict came from the narrow
+re-run. Stopped a second time: the candidate goes under "Needs
+verification", with "check stopped by the provider's safety system" as the
+reason — never confirmed on your own reading alone.
 
 A refuter that searches the web names only public things in the query — a
 library, a version, an API, a CVE id — never code, paths, hosts, routes,

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.1 — 2026-10-10
+
+- **A refuter stopped early is asked again, once, in other words.** The
+  model provider's safety system ended 2 of 11 refuters in one review of a
+  Spring service, and the session then confirmed those candidates on its own
+  reading. Step 5 now starts one new refuter with a narrow brief — questions
+  of fact about the code, each answered with a `file:line` quote, no attack
+  wording, no scenario, no payload — and scores the candidate from the
+  answers. Stopped twice, the candidate goes under "Needs verification";
+  it is never confirmed on the session's own reading alone. Checked: on one
+  of the two stopped candidates the narrow brief gave an answer enough for a
+  verdict, for USD 0.65. Not shown: that it avoids the stop in a long
+  session — a short run on its own was not stopped with either wording.
+
 ## 1.8.0 — 2026-10-10
 
 - **`scripts/modules.sh` counts the source files and lists the modules.**
