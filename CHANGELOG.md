@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.3 — 2026-10-10
+
+- Documentation wording: the paragraphs added in 1.8.2 read through for
+  sentence length, calques and meaning. One Russian line said the opposite of
+  what it meant — a candidate "not reached by the refutation limit" instead of
+  one past it. The skill itself is unchanged.
+
 ## 1.8.2 — 2026-10-10
 
 - Documentation caught up with 1.7.0–1.8.1. README and `docs/guide.*` said

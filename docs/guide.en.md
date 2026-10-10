@@ -160,9 +160,9 @@ bash shell)".
 ## The report
 
 Before the review starts, the skill names the model it runs on and asks in one
-dialog where the report goes, in which format and in which language. Where the
-assistant has no question tool — Codex in its default mode — the questions come
-as a numbered list, and you answer with three digits, or four with the scope:
+dialog where the report goes, in which format and in which language. Codex in
+its default mode has no question tool. There the questions come as a numbered
+list, and you answer with three digits, or four with the scope:
 
 | Question | Options | Default |
 |---|---|---|

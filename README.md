@@ -32,7 +32,7 @@
 > before it starts. It offers to narrow the scope: selected modules, the
 > branch's changes, or the repository in parts. In parts, every module gets
 > its own pass. A shared map and a pass over the module borders keep the
-> connections between modules in view; a module reviewed on its own would
+> connections between modules in view. A module reviewed on its own would
 > miss them. On the same 3888 files the parts run took 33 minutes and USD 57.
 > It confirmed 16 vulnerabilities and listed what it did not reach; the
 > single pass confirmed 17. Each found what the other missed: the single
