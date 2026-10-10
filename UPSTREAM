@@ -6,7 +6,8 @@ path skills/security-review
 commit 3482d8dd3531
 file 84bd49469c5a0cbd42fecdcce752de98cf6821b601dfef6a1920df61f030ae62 infrastructure/docker.md
 file f4226c82de13da9dec9be7b509932d74a4ade2c8d46b98a078a5b38bf8aa3319 languages/javascript.md
-file 32d0b1304d132fc582320d584d54bbaea566d51700cd16b3f0be723ed834a556 languages/python.md
+# changed 2026-10-10: line 150, an example literal masking tools read as a key — see NOTICE
+file f71e06429388e224033ae3eff356741ea5d3e35edcf8eb73e32a2bcfa44e07d6 languages/python.md
 file 65b2456b4c5ae0d6d9849eac8196ac03fbefbf88657c5e069a8aa5063dd6afbf references/api-security.md
 file 7bc598cd4af33bb62406f5a0e8ff7adebff83c04e5fb449e6738f96ae0e26be6 references/authentication.md
 file 5ccfd579a1eca4d9d374eb00b04ba33cc9a2918e14e5cb7620c136a6feaeffff references/authorization.md

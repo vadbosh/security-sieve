@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.1 — 2026-10-10
+
+- `languages/python.md` line 150: the example `app.secret_key = '…'` now
+  holds `'dev'`. Masking tools read the old 9-letter literal after a
+  `secret_key` label as a credential, and from env2hell 0.13.18 the guard
+  refused to print the guide, which in Codex is the only way to read it. The
+  file is an upstream copy: the change is recorded in `NOTICE` and its sum in
+  `UPSTREAM`.
+
 ## 1.7.0 — 2026-10-10
 
 - **Java guide: `languages/java.md`.** Spring Boot, Spring Security,

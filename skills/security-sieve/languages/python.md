@@ -147,7 +147,7 @@ render_template_string(user_controlled_template)  # FLAG: Critical
 Template(user_input).render()  # FLAG: Critical
 
 # Session Security
-app.secret_key = 'hardcoded'  # FLAG
+app.secret_key = 'dev'  # FLAG
 app.config['SECRET_KEY'] = 'weak'  # FLAG
 
 # Debug Mode
