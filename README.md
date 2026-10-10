@@ -24,6 +24,21 @@
 > the code and the deployment before anything is fixed, rotated, published or
 > sent to a client. What the report does not mention is not checked.
 
+> [!NOTE]
+> **A large repository costs time and money, and a single pass does not read
+> all of it.** On Claude Opus, 144 C# files took 8 minutes; 3888 Java files
+> took 27 minutes and USD 42, and the search looked at about one file in
+> nine, chosen by the model. Above 500 source files the skill says this
+> before it starts. It offers to narrow the scope: selected modules, the
+> branch's changes, or the repository in parts. In parts, every module gets
+> its own pass. A shared map and a pass over the module borders keep the
+> connections between modules in view; a module reviewed on its own would
+> miss them. On the same 3888 files the parts run took 33 minutes and USD 57.
+> It confirmed 16 vulnerabilities and listed what it did not reach; the
+> single pass confirmed 17. Each found what the other missed: the single
+> pass a remote code execution, the parts run seven holes in business logic.
+> For important code, use both.
+
 A security-review skill for Claude Code, Codex and Opencode that **reports only
 vulnerabilities an attacker can exploit**.
 
@@ -144,6 +159,7 @@ redaction tool on your machine.
 | JavaScript, TypeScript | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
 | PHP | Laravel, Symfony, plain PHP | `languages/php.md` |
 | C# | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
+| Java, Kotlin | Spring Boot, Spring Security, JPA/Hibernate, JDBC, MyBatis, Servlets | `languages/java.md` |
 | Containers | Dockerfile and runtime | `infrastructure/docker.md` |
 | Kubernetes, Helm | Pod security, RBAC, secrets, ingress, charts | `infrastructure/kubernetes.md` |
 | Terraform | IAM, ports and services open to the internet, state and secrets in HCL | `infrastructure/terraform.md` |

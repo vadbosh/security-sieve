@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.7.0 — 2026-10-10
+
+- **Java guide: `languages/java.md`.** Spring Boot, Spring Security,
+  JPA/Hibernate, JDBC, MyBatis, Servlets; Kotlin on Spring reads the same.
+  No ready guide existed in this form: getsentry/skills has none, and the
+  Trail of Bits Java notes cover the language, not Spring, so they are
+  linked. Written against a real Spring Boot 2.2 service of 3607 source
+  files. What that code taught it: where the caller's identity comes from
+  when Spring Security is not used, `@ModelAttribute` filled from a request
+  parameter of the same name, placeholder defaults (`${key:value}`) as
+  secrets scanners miss, an authorisation inventory for Spring handlers and
+  what to do when the checks live in services, EL injection through Bean
+  Validation messages, hand-made quote escaping on MySQL, `@Cacheable` that
+  skips an ownership check. Every grep in the guide was run on that code;
+  every one names its path, because `rg` without one reads a piped stdin.
+- **Large repositories: a scope question in Step 0.** Above 500 source
+  files the skill says what a review of that size took — measured, with the
+  date — and offers parts, selected modules, the whole repository, or the
+  branch's changes. README carries the same numbers in a note.
+- **Parts mode.** A map of modules, trust nodes and the guide's sink hits
+  for the whole repository, one pass per module, a pass over the seams,
+  refutation of the strongest 12 candidates, and a report that lists the
+  unverified candidates and what was not covered. Tried on the same code:
+  33 minutes and USD 57 against 27 minutes and USD 42 for one pass; each
+  confirmed holes the other missed. The first try ended without a report —
+  45 candidates, a stop to ask in a run nobody answered, and the sink
+  sweep cut short as a part of its own — and the rules for all three came
+  from it.
+- **Configuration files are read by key, never printed**, not even through
+  a host's masking filter. Both test runs printed `application.yaml`, and
+  keys from it reached their transcripts.
+
 ## 1.6.1 — 2026-10-10
 
 - The 1.3.3 entry of this changelog quoted the two guide examples that had

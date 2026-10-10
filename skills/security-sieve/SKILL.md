@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.6.1"
+version: "1.7.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -78,7 +78,46 @@ the **last** one: it is the model answering now. Not sure — say "model: not
 certain" rather than guess. The report's **Model** field follows the same
 rule.
 
-Then, before Step 1, ask the user three things **in one dialog**, with the
+**Count the source files before asking**, in code mode on a repository or a
+directory. Tests, vendored and generated code do not count:
+
+```bash
+cd "<repo-dir>" && { git ls-files 2>/dev/null || find . -type f -not -path '*/.git/*'; } |
+  grep -Ev '(^|/)(tests?|__tests__|spec|vendor|node_modules|dist|build|target|generated)/|\.min\.js$' |
+  grep -Ec '\.(java|kt|scala|cs|py|js|jsx|ts|tsx|php|go|rb|rs|c|cc|cpp|swift|tf)$'
+```
+
+**Above 500**, the dialog below gets a fourth question, scope, and the line
+before it says what the size means, with the measured numbers and their date
+— not a guess. In English:
+
+```
+<N> source files. On Claude Opus (2026-10-10), 144 C# files took 8 minutes.
+3888 Java files took 27 minutes and USD 42 in one pass, which looked at about
+one file in nine, chosen by the model; in parts, 33 minutes and USD 57, with
+a list of what it did not cover. The two found different holes. Narrowing
+the scope is cheaper and says what was covered.
+```
+
+The scope options, recommended first:
+
+| Option | What it means |
+|--------|---------------|
+| In parts, with a map | every module gets its own pass; see "Parts mode" below |
+| Selected modules | the user picks from the largest ones — list them by file count |
+| Whole repository at once | one pass; the model chooses what to read |
+| Only the branch's changes | diff mode |
+
+List the modules for the second option with the same file filter, grouped
+by the build's own modules (`pom.xml` / `build.gradle` / `*.csproj` /
+`package.json` / `go.mod` directories) or, failing that, by the directories
+below the longest common prefix of the source paths — in Java, the packages
+below the root package. Split a group that still holds more than 500 files
+one level deeper. At 500 files or below, ask no scope question: a review of
+that size reads most of the code anyway.
+
+Then, before Step 1, ask the user three things — four with the scope —
+**in one dialog**, with the
 assistant's structured question tool — `AskUserQuestion` in Claude Code,
 `question` in Opencode, `request_user_input` in Codex (Plan mode only).
 Where the tool is not available — Codex in its default mode, for one — write
@@ -95,6 +134,10 @@ Where should the report go? Answer with three digits:
 3. Language: 1) <language of the session>  2) English
 For example: "1 3 1".
 ```
+
+With the scope question, the list gets a fourth line —
+`4. Scope: 1) in parts, with a map  2) selected modules  3) whole repository at once  4) branch changes only`
+— and the example becomes four digits.
 
 The questions and their options:
 
@@ -173,6 +216,57 @@ of the report, one line each, and never counts toward the score.
 message consumers, file and network readers. Read outward from them; a sink
 nothing reaches is not a finding.
 
+**Parts mode** — code mode for a large repository, when the user chose it in
+Step 0. Cutting the code into pieces loses exactly what crosses them: a
+module that calls another's service trusting it to check, data one module
+writes and another renders. So the parts share a map, and the seams get a
+pass of their own.
+
+1. **Map, once, for the whole repository, without reading logic.** Write it
+   to `<scratch>/map.md`: the modules (build modules, else top-level
+   packages or directories) with their entry points; the **trust nodes**
+   every module depends on — the authentication filter, where the caller's
+   identity comes from, base controllers, shared permission checks, the
+   shared data-access layer (the language guide says where to look); and
+   which module calls which. Read the trust nodes in full: they belong to
+   every part. **Run the language guide's grep patterns here, over the whole
+   repository**, and put the hits in the map by module: sinks are not a
+   part of their own. A run on 3607 Java files gave the sink sweep to a fifth
+   part; it was stopped after SQL, and the review missed the remote code
+   execution a single pass had found through one of those patterns.
+2. **One part per module**, a subagent each where the assistant has them
+   (in Claude Code with `model` set to the session's model, as in Step 5),
+   one after another where it does not. Each part gets the map and its own
+   files, runs Steps 2 and 4 on them, and returns candidates plus the list
+   of files it read. Candidates, not findings: refutation stays in Step 5.
+3. **Seams.** One pass over the borders from the map: calls into another
+   module's services that skip its controller's checks, data written in one
+   module and read or rendered in another (stored XSS, second-order SQL),
+   message consumers that trust what another module produced.
+4. **Then Steps 3, 5, 6 and 7 as usual**: scanners once for the whole
+   repository, candidates refuted one by one, variants searched across
+   the whole repository — a hole found in one part is looked for in all of
+   them — and one report.
+
+Rules learned on that run (five parts, about 45 candidates):
+
+- **A refutation budget.** Merge duplicate candidates, order them by what an
+  attacker gains and how little the attacker needs, and refute the strongest
+  12. The rest go into the report under "Unverified candidates", one line
+  each. Refuting all 45 is about nine waves of refuters; the 12 took eleven
+  minutes.
+- **Never stop to ask in a run nobody answers.** The run above ended its
+  turn with three options and no report. Apply the budget and write the
+  report; say in its first line what was decided without the user.
+- **A part can be stopped early** — the model provider's safety system cut
+  three of five parts short there. Do not re-run it in the same session.
+  Name what it did not reach under "Not covered", and offer the user a
+  separate run of that module.
+
+The report says what was covered: a **Coverage** line in the summary with
+the modules reviewed, the ones left out and why, and a "Not covered"
+section with the details.
+
 ### 2. Load the guides
 
 What kind of code is it?
@@ -205,6 +299,7 @@ Then the language and the infrastructure:
 | `.js`, `.ts`, `express`, `react`, `vue`, `next` | `languages/javascript.md` |
 | `.php`, `laravel`, `symfony`, `composer.json` | `languages/php.md` |
 | `.cs`, `.csproj`, `.sln`, `asp.net`, `Microsoft.AspNetCore` | `languages/csharp.md` |
+| `.java`, `.kt`, `pom.xml`, `build.gradle`, `spring`, `@RestController` | `languages/java.md` |
 | `Dockerfile`, `.dockerignore`, compose files | `infrastructure/docker.md` |
 | Kubernetes manifests, Helm charts and values | `infrastructure/kubernetes.md` |
 | `.tf`, `.tfvars`, OpenTofu, Terragrunt | `infrastructure/terraform.md` |
@@ -292,6 +387,16 @@ Rules for these runs:
   projections above keep the detector, file, line and commit and drop the
   value. A report names where a secret is, never what it is. The skill masks
   values itself and does not rely on any redaction tool of the host.
+- **Configuration files are read by key, never printed.** `application.yml`,
+  `.env`, `appsettings*.json`, `*.tfvars`, SOPS files and their kind hold live
+  values. Do not `cat`, `sed -n`, `rg -A`, `head` or `Read` them, and not
+  through a host's masking filter either: two reviews of one Spring
+  repository (2026-10-10) read `application.yaml` with `rg -A12` and through
+  such a filter, and Stripe and API keys reached both transcripts. Print the
+  file, the line and the key — the language guide has the commands — and when
+  a decision depends on a value (a placeholder or a real one?), test it in the
+  shell without printing it:
+  `case "$v" in '${'*|'<'*|''|changeme*) echo placeholder ;; *) echo "set, ${#v} chars" ;; esac`.
 - **No `jq`, no `trufflehog`.** Without `jq` there is no safe way to read
   `trufflehog` output, so skip it and write "trufflehog skipped: jq not
   installed" in the report. `gitleaks` with `--redact` is safe to read
@@ -326,7 +431,8 @@ Rules for these runs:
   An expired token is dropped; the key that signed it is a finding of its own
   if it is in the repository.
 - A host's own redaction hook may mask ordinary code in tool output. If a
-  decision depends on a masked line, read that line again from the file.
+  decision depends on a masked line of code, read that line again from the
+  file — never a line of a configuration file (the rule above).
 
 **No bash, no scanners.** The commands above are bash. On Windows they run in
 Git Bash; where the assistant has only PowerShell, skip this step and write
@@ -741,6 +847,7 @@ The score is for triage at a glance. It is not CVSS.
 
 ### Summary
 - **Scope**: [files / diff base..HEAD / repository]
+- **Coverage**: [parts mode or a narrowed scope: modules reviewed, modules left out and why — omit for a full small review]
 - **Model**: [the model that ran the review, and the refuters' model if different]
 - **Findings**: X (Y Critical, Z High, ...)
 - **Posture score**: N/10
@@ -773,6 +880,13 @@ The score is for triage at a glance. It is not CVSS.
 
 ### Outside the diff
 - `old.py:12` — [one line] (diff mode only)
+
+### Unverified candidates
+- `file.java:88` — [class, one line: what an attacker would gain] (parts mode, past the refutation budget)
+
+### Not covered
+- [modules, sink classes or parts that were not reviewed, or were stopped
+  early, and why] (parts mode or a narrowed scope)
 
 ### Not assessable from the repository
 - [what depends on configuration kept elsewhere — a security group created
@@ -850,6 +964,7 @@ summary. Translate it into the report's language; never drop or shorten it.
 | `javascript.md` | Node, Express, React, Vue, Next.js |
 | `php.md` | Laravel, Symfony, plain PHP |
 | `csharp.md` | ASP.NET Core, ADO.NET, EF Core, Dapper |
+| `java.md` | Spring Boot, Spring Security, JPA/Hibernate, JDBC, MyBatis, Servlets |
 
 ### Infrastructure (`infrastructure/`)
 
