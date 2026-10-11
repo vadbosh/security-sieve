@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.10.1"
+version: "1.10.2"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -82,9 +82,9 @@ State the facts; do not rate yourself. The measurements behind this are in
 the README, not in the chat.
 
 **A security review can be dropped onto a weaker model mid-run — by the
-harness, not by anyone choosing it.** Measured 2026-10-11: Opus 5.5's
-safeguards flagged a review session as `[cyber]` and the harness answered the
-rest with Opus 4.8. It shows up as a `model_refusal_fallback` system event in
+harness, not by anyone choosing it.** Opus 5.5's safeguards can flag a
+review session as `[cyber]`, and the harness then answers the rest with
+Opus 4.8. It shows up as a `model_refusal_fallback` system event in
 the transcript, and after it every message — the refuters included — carries
 `claude-opus-4-8` while the chat still reads "Opus". This is built into
 running this skill on 5.5: the attack-tracing content trips 5.5's safeguards,
@@ -130,7 +130,7 @@ bash "<skill-dir>/scripts/modules.sh" "<repo-dir>"
 
 **Above 500**, the dialog below gets a fourth question, scope, and the
 script prints `say-to-user:` lines first: what a review of this size cost
-when it was measured, with the date. Say all of them, in the session's
+when it was measured. Say all of them, in the session's
 language, before the questions — not only the file count: two Codex runs out
 of three cut the text to that and left the reader nothing to decide by.
 
@@ -155,7 +155,7 @@ reports. On 3888 Java files they confirmed 17 and 16 vulnerabilities, about
 other missed.
 ```
 
-Do not run both in one review. Tried on the same code (2026-10-10), one run
+Do not run both in one review. Tried on the same code, one run
 doing both cost USD 80 and confirmed 6: the two searches found more
 candidates than one session could refute, and 20 were left unverified —
 among them injections the separate runs had confirmed.
@@ -461,7 +461,7 @@ Rules for these runs:
   `.env`, `appsettings*.json`, `*.tfvars`, SOPS files and their kind hold live
   values. Do not `cat`, `sed -n`, `rg -A`, `head` or `Read` them, and not
   through a host's masking filter either: two reviews of one Spring
-  repository (2026-10-10) read `application.yaml` with `rg -A12` and through
+  repository read `application.yaml` with `rg -A12` and through
   such a filter, and Stripe and API keys reached both transcripts. Print the
   file, the line and the key — the language guide has the commands — and when
   a decision depends on a value (a placeholder or a real one?), test it in the
@@ -473,9 +473,13 @@ Rules for these runs:
   directly: `Read` its JSON files.
 - **History and working tree are separate runs.** The `git` modes see commits
   only; a key in an untracked or staged file is invisible to them. Run both
-  rows of each tool. In a directory that is not a git repository run only the
-  working-tree rows: `gitleaks git` there prints "no leaks found" with exit 0
-  after scanning 0 commits, which is not evidence of anything.
+  rows of each tool. History belongs to a repository, not to the target:
+  `scan.sh` scans the history of the repository holding the target, kept to
+  the target's paths when it is a subdirectory, and, when the target is a
+  directory holding several repositories, each one's history labelled with
+  its directory. Only a tree with no `.git` at all gets no history run —
+  `gitleaks git` there prints "no leaks found" with exit 0 after scanning 0
+  commits, which is not evidence of anything — and the summary says so.
 - **Read `semgrep` and `trivy` JSON without its source quotes.** Both copy the
   matched source lines into their output (`extra.lines`, `Code`), and such a
   line can hold a secret. Read them through

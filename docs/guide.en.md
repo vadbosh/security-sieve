@@ -138,9 +138,10 @@ results without secret values.
   file put live keys into their session logs.
 - Secret scanners run twice: on git history (`git` mode) and on the working
   tree (`filesystem` / `dir` mode). The git modes do not see untracked or
-  staged files. In a directory that is not a repository only the working-tree
-  runs make sense: `gitleaks git` there reports "no leaks found" after
-  scanning 0 commits.
+  staged files. History is read from the repository that holds the target:
+  for a subdirectory, only its own paths; for a directory holding several
+  repositories, each one's history, labelled with its directory. A tree with
+  no `.git` at all has no history to read, and the scanner summary says so.
 - `checkov` runs with `-o cli --compact`; its JSON was about seven times larger
   for the same findings.
 - `trivy` and `checkov` run without their secret scanners. `trivy` output

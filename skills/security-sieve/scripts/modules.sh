@@ -56,7 +56,7 @@ cd "$repo" || { echo "modules.sh: cannot enter $repo" >&2; exit 2; }
 n="$(sed -n '1s/^files=//p' "${TMPDIR:-/tmp}/modules.$$")"
 if [ "${n:-0}" -gt "$limit" ]; then
     cat <<EOF
-say-to-user: $n source files. Measured on Claude Opus (2026-10-10): 144 C# files took
+say-to-user: $n source files. Measured on Claude Opus: 144 C# files took
 say-to-user: 8 minutes; 3888 Java files took 27 minutes and USD 42 in one pass, which looked
 say-to-user: at about one file in nine, and 33 minutes and USD 57 in parts. Narrowing the
 say-to-user: scope is cheaper and says what was covered.

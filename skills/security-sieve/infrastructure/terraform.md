@@ -455,7 +455,7 @@ Checkov flags (`-d`, `-f`, `--framework`, `--quiet`, `--compact`, `--soft-fail`,
 `--check`, `-o`) are in its CLI reference. `trivy config` takes `-s` /
 `--severity` with the values UNKNOWN, LOW, MEDIUM, HIGH, CRITICAL, and `kics
 scan` takes `-p` / `--path` and `-o` / `--output-path` (Trivy CLI reference and
-KICS command documentation, checked 2026-10-09). tfsec's own repository says
+KICS command documentation). tfsec's own repository says
 its scanning was consolidated into Trivy and that tfsec remains available but
 is no longer the focus, so use `trivy config` for new work.
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.10.2 — 2026-10-11
+
+- **The history scan works on a directory below the repository root.** A
+  review of `CCE/` inside a larger repository made trufflehog clone
+  `file://…/CCE`, which is not a repository, so history went unscanned; and
+  gitleaks read the whole repository's history instead of the target's.
+  `scan.sh` now finds the root, clones it into the scratch directory with
+  `--clone-path`, and keeps only the target's paths (`-i` for trufflehog,
+  `--log-opts "-- <path>"` for gitleaks). A target above repositories — a
+  directory holding several — used to read as "no git", and none of their
+  history was scanned; each one's history is now scanned on its own, its
+  findings labelled with its directory. Tried on four targets: a
+  subdirectory, a repository root, a directory holding five repositories
+  (ten history runs, all clean) and a tree with no `.git`. History stays
+  within the target, the no-git tree says it has none, and no file is
+  written inside any of them.
+- README, the CAUTION block: a paragraph on the model changing halfway
+  through a review. Opus 5.5's safeguards can flag the session as
+  cybersecurity work and the rest is answered by the weaker Opus 4.8 while
+  the chat still says "Opus"; the skill reports it in its first line and in
+  the report, and the reader switches back with `/model` and re-runs.
+- Dates of individual measurements removed from the skill, the guides, the
+  README and `modules.sh`: the text states what happens, not when one run
+  saw it.
+
 ## 1.10.1 — 2026-10-11
 
 - The fallback check counted the word, not the event. 1.10.0 told the review
@@ -12,8 +37,8 @@
 ## 1.10.0 — 2026-10-11
 
 - **The model is pinned down by its exact id, and a mid-run fallback is
-  caught.** Measured 2026-10-11: Opus 5.5's safeguards flagged a review as
-  `[cyber]` and the harness answered the rest on Opus 4.8 — a
+  caught.** Opus 5.5's safeguards flagged a review as `[cyber]` and the
+  harness answered the rest on Opus 4.8 — a
   `model_refusal_fallback` event, after which the hunt and the refuters ran on
   the weaker model while the chat still read "Opus". Step 0 now records the
   exact model id (`claude-opus-5-5`, not the marketing name), warns in the
