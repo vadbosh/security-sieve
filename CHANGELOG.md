@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.4 — 2026-10-11
+
+- README: the heading of the CAUTION block is one level smaller. Documentation
+  only.
+
 ## 1.10.3 — 2026-10-11
 
 - README: the paragraph on the model changing halfway through a review moved

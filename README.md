@@ -1,7 +1,7 @@
 # security-sieve
 
 > [!CAUTION]
-> ## ⚠️ THE MODEL DECIDES WHAT THIS REVIEW FINDS
+> ### ⚠️ THE MODEL DECIDES WHAT THIS REVIEW FINDS
 >
 > 🔴 **The same skill on the same code finds different vulnerabilities on
 > different models.** One multi-tenant API with 7 confirmed vulnerabilities,
