@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.9.0"
+version: "1.9.1"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -549,6 +549,17 @@ This is the step that makes the report trustworthy. Each candidate is checked
 - otherwise take them one at a time, and re-read the code for each one
   instead of relying on what you concluded during the hunt.
 
+**A candidate may be dropped without a refuter only on a named exclusion** —
+a numbered class from "Classes excluded outright" or a precedent from "Do
+not flag", that holds without following any data: denial of service, a
+permission check in client-side code, a value from configuration. Every
+such drop goes into the report under "Dropped on exclusions", one line
+each, with the exclusion named, so a person can check the call. A candidate
+whose verdict depends on where a value comes from, or on what a check on
+the way does, gets a refuter even when an exclusion looks likely. Measured:
+a live run dropped all four of its candidates on exclusions, started no
+refuter, and the report did not say which exclusion dropped which.
+
 A subagent starts from nothing and sees only what it is given. Give it, in
 full text, not as references to "the sections above":
 
@@ -966,6 +977,9 @@ The score is for triage at a glance. It is not CVSS.
 
 ### Outside the diff
 - `old.py:12` — [one line] (diff mode only)
+
+### Dropped on exclusions
+- `file.js:40` — [class, one line] — [the exclusion: "Classes excluded outright" N, or the precedent] (dropped without a refuter, Step 5)
 
 ### Unverified candidates
 - `file.java:88` — [class, one line: what an attacker would gain] (parts mode, past the refutation budget)

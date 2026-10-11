@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.1 — 2026-10-11
+
+- **A candidate dropped without a refuter is named in the report.** The
+  live run of 1.9.0 dropped all four of its candidates on exclusions,
+  started no refuter, and the report did not say which exclusion dropped
+  which. Step 5 now allows a drop without a refuter only on a named
+  exclusion that holds without tracing data — denial of service, a
+  permission check in client-side code — and the report lists each one
+  under "Dropped on exclusions". A candidate whose verdict depends on where
+  a value comes from still gets a refuter.
+
 ## 1.9.0 — 2026-10-11
 
 - **The review ends with a fixed block.** Step 7 said "show the summary

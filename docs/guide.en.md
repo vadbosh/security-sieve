@@ -50,6 +50,11 @@ gets, in full text:
 It does not see the other candidates. Without subagents the skill takes the
 candidates one at a time and re-reads the code for each.
 
+Without a subagent, the skill may drop a candidate only on a named
+exclusion. That exclusion must hold without tracing data: denial of service,
+a permission check in client-side code. Each such drop is listed in the report under "Dropped on
+exclusions", with the exclusion, so you can check the call.
+
 In Claude Code each subagent runs on the session's own model. Without that, a
 configured default model for subagents applies: in one review, every
 refutation ran on Sonnet while the review ran on Opus.
