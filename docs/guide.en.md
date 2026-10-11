@@ -57,7 +57,13 @@ exclusions", with the exclusion, so you can check the call.
 
 In Claude Code each subagent runs on the session's own model. Without that, a
 configured default model for subagents applies: in one review, every
-refutation ran on Sonnet while the review ran on Opus.
+refutation ran on Sonnet while the review ran on Opus. The model can also
+change a second way: Opus 5.5's safeguards sometimes flag a review as cyber
+work, and the harness falls back to a weaker Opus partway through. The skill
+records the exact model id and confirms the refuters' id from their
+transcripts. When the model is weaker than the one the method was validated
+on, or changed mid-run, it warns in the first line of the review and in the
+report.
 
 The model provider's safety system sometimes stops a subagent halfway: the
 text of a refutation reads like attack planning. The skill then asks once

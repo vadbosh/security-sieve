@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.9.2"
+version: "1.10.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -57,26 +57,64 @@ Before flagging anything, learn from the codebase:
 
 ### 0. Ask where the report goes
 
-First say in the chat which model runs the review — your own model name, as
-your system prompt gives it. One plain sentence in the language of the
-session, written for someone who has not read this skill: no terms from it
-(refutation, candidate, findings), no shorthand, even where the session asks
-for terse replies. In English:
+First say in the chat which model runs the review — the **exact model id**,
+not the marketing name. Your system prompt states it ("The exact model ID
+is …"); use that string, for example `claude-opus-5-5`, never "Opus" or "5.5"
+on its own. The display name and the id have drifted apart, and a weaker model
+can carry a higher-sounding name — so the id is the only thing that settles it.
+One plain sentence in the language of the session, written for someone who has
+not read this skill: no terms from it (refutation, candidate, findings), no
+shorthand, even where the session asks for terse replies.
 
-- on Claude Opus: "The review runs on Claude Opus, the model the method was
-  tested on."
-- on any other model: "The review runs on <model>. The method was tested on
-  Claude Opus, not on this model; for an important review, use the strongest
-  model you have."
+The method was validated on `claude-opus-5-5` — the README measurements. In
+English:
+
+- id is `claude-opus-5-5`: "The review runs on Claude Opus 5.5, the model the
+  method was tested on."
+- any other id: "The review runs on <exact id>. The method was tested on
+  `claude-opus-5-5`, not on this model, which is weaker; for an important
+  review switch to Opus 5.5 and run it again." **Say this as the first line of
+  the review**, and carry it into the report's Model field — a model weaker
+  than the validated one is a caveat on every finding, so it cannot be left to
+  a footnote.
 
 State the facts; do not rate yourself. The measurements behind this are in
 the README, not in the chat.
 
-A session can be switched to another model midway, and then the context
-names more than one ("based on GPT-6" first, "based on GPT-5" later). Take
-the **last** one: it is the model answering now. Not sure — say "model: not
-certain" rather than guess. The report's **Model** field follows the same
-rule.
+**A security review can be dropped onto a weaker model mid-run — by the
+harness, not by anyone choosing it.** Measured 2026-10-11: Opus 5.5's
+safeguards flagged a review session as `[cyber]` and the harness answered the
+rest with Opus 4.8. It shows up as a `model_refusal_fallback` system event in
+the transcript, and after it every message — the refuters included — carries
+`claude-opus-4-8` while the chat still reads "Opus". This is built into
+running this skill on 5.5: the attack-tracing content trips 5.5's safeguards,
+so the strongest model is exactly the one most likely to fall back to a weaker
+one partway. Do not trust the name in the flow.
+
+Check the session transcript (`~/.claude/projects/<cwd-slug>/<session-id>.jsonl`)
+for it: `rg -o '"model":"claude-[^"]*"' "<file>" | sort -u` lists the distinct
+ids, and `rg -c model_refusal_fallback "<file>"` shows whether a fallback
+fired. More than one id means part of the work ran on each; the report's Model
+field says so and names which id the findings and the refuters actually ran
+on. The operator can edit the flagged turn and retry on Opus 5.5, or accept
+the weaker model — either way the report records the fallback. Cannot read the
+transcript — say which id the system prompt reports now and that an earlier
+part may have run on another; never write "not certain" when a transcript
+could have settled it.
+
+**To make the fallback less likely, keep the attack-tracing content off the
+main thread.** The flag fires on the session that writes exploit prose, and in
+this skill that is the hunt and the refutation — both already run in subagents
+(Steps 4 and 5). The main thread orchestrates: it reads structure, lists entry
+points and dispatches, and does not write out exploit scenarios itself. A
+subagent that is flagged falls back on its own and returns a verdict on the
+weaker model, which the transcript check above catches; the main session,
+kept clear of that content, is less likely to be dropped for the whole review.
+This lever is not available everywhere: the subagent `model` override is only
+honoured in Claude Code (dropped for Codex and Opencode), and the
+`model_refusal_fallback` event is specific to the Claude Code harness — on
+Codex, name the model the host reports and say a mid-run change cannot be
+confirmed from here.
 
 **Count the source files before asking**, in code mode on a repository or a
 directory, with the script that ships with this skill. Tests, vendored and
@@ -544,8 +582,14 @@ This is the step that makes the report trustworthy. Each candidate is checked
   (`"opus"` in an Opus session). Without it a configured default —
   `CLAUDE_CODE_SUBAGENT_MODEL` — silently runs every refuter on another
   model: measured, a whole review's refuters ran on Sonnet while the session
-  ran on Opus, and Sonnet's safeguards stopped one of them halfway. A
-  refuter stopped early gets one narrow re-run (below);
+  ran on Opus, and Sonnet's safeguards stopped one of them halfway. Setting
+  `model` closes that trap but does not prove it held: after the refuters
+  finish, read each one's id from its transcript — the spawn result names the
+  output file, and `rg -o '"model":"claude-[^"]*"' "<file>" | sort -u` prints
+  it — and record in the report that the refuters' id was **confirmed from
+  their transcripts**, not assumed. An id different from the session's is the
+  trap caught in the act: flag it. A refuter stopped early gets one narrow
+  re-run (below);
 - otherwise take them one at a time, and re-read the code for each one
   instead of relying on what you concluded during the hunt.
 
@@ -944,7 +988,7 @@ The score is for triage at a glance. It is not CVSS.
 ### Summary
 - **Scope**: [files / diff base..HEAD / repository]
 - **Coverage**: [parts mode or a narrowed scope: modules reviewed, modules left out and why — omit for a full small review]
-- **Model**: [the model that ran the review, and the refuters' model if different]
+- **Model**: [the exact session model id; whether it matches the validated `claude-opus-5-5` (if not, that the model is weaker); the refuters' id confirmed from their transcripts; and, if the session used more than one id, that it switched and which id the findings ran on — never "not certain" when a transcript can settle it]
 - **Findings**: X (Y Critical, Z High, ...)
 - **Posture score**: N/10
 - **Needs verification**: K

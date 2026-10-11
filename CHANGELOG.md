@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.10.0 — 2026-10-11
+
+- **The model is pinned down by its exact id, and a mid-run fallback is
+  caught.** Measured 2026-10-11: Opus 5.5's safeguards flagged a review as
+  `[cyber]` and the harness answered the rest on Opus 4.8 — a
+  `model_refusal_fallback` event, after which the hunt and the refuters ran on
+  the weaker model while the chat still read "Opus". Step 0 now records the
+  exact model id (`claude-opus-5-5`, not the marketing name), warns in the
+  first line of the review when the id is not the validated `claude-opus-5-5`,
+  and reads the session transcript for `model_refusal_fallback` and for more
+  than one model id. Step 5 confirms the refuters' id from their transcripts
+  instead of assuming it, and the report's Model field records the fallback
+  and which id the findings ran on. The guides and the report template follow.
+  To make the fallback less likely, the note spells out that the attack-tracing
+  content stays in subagents and the main thread only orchestrates; it also
+  says what cannot work on Codex and Opencode (the `model` override is dropped
+  there, and the fallback event is Claude Code's). Verified on this session's
+  own transcript: the ids and the fallback event read back as described.
+
 ## 1.9.2 — 2026-10-11
 
 - README dependency table, scanner rows rewritten to carry meaning. The
