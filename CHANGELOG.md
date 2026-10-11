@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.10.8 — 2026-10-11
+
+- 1.10.7 said a model switch cannot be detected in Codex. That was wrong.
+  OpenAI's "Trusted Access for Cyber" also routes a request to another,
+  weaker model mid-session (openai/codex#12132: "GPT-5.3 requests
+  automatically routed to GPT-5.2"), and Codex records the model of every
+  turn in its session log as `turn_context.model`. The skill now tells the
+  model to check `~/.codex/sessions/<date>/rollout-*.jsonl` for more than one
+  model id, and the README says Codex works the same way. Opencode remains
+  unchecked. The Codex check has not been tried in a live Codex review.
+
 ## 1.10.7 — 2026-10-11
 
 - README, the WARNING on the model changing mid-review: it now says the

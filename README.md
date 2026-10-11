@@ -34,9 +34,10 @@
 > switch back. From then on, the checks of the findings run on the
 > weaker model too. The skill reads the session log and says so in the first
 > line of the review and in the report. When it does, switch back with
-> `/model` and run the review again. This check works in Claude Code only.
-> In Codex and Opencode the skill names the model the host reports, and it
-> cannot detect a switch in the middle of a review.
+> `/model` and run the review again. Codex works the same way. OpenAI can
+> route a request to a weaker model ("Trusted Access for Cyber"), and the
+> skill checks the Codex session log for it. Opencode was not checked; there
+> the skill names the model the host reports.
 
 > [!NOTE]
 > 🔵 **A large repository costs time and money, and a single pass does not read

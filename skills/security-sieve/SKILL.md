@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.10.7"
+version: "1.10.8"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -115,9 +115,17 @@ weaker model, which the transcript check above catches; the main session,
 kept clear of that content, is less likely to be dropped for the whole review.
 This lever is not available everywhere: the subagent `model` override is only
 honoured in Claude Code (dropped for Codex and Opencode), and the
-`model_refusal_fallback` event is specific to the Claude Code harness — on
-Codex, name the model the host reports and say a mid-run change cannot be
-confirmed from here.
+`model_refusal_fallback` event is specific to the Claude Code harness.
+
+**Codex switches models too, and records it.** OpenAI's "Trusted Access for
+Cyber" can route a request to another, weaker model mid-session (the Codex
+interface says so on that turn). Codex writes the model of every turn into
+its session log, `~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl`, as
+the `model` field of each `turn_context` record:
+`rg -o '"model":"[^"]*"' "<file>" | sort | uniq -c`. More than one id means
+part of the review ran on each — report it the same way. Opencode: not
+checked; name the model the host reports and say a mid-run change was not
+confirmed.
 
 **Count the source files before asking**, in code mode on a repository or a
 directory, with the script that ships with this skill. Tests, vendored and
