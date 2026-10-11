@@ -162,27 +162,27 @@ redaction tool on your machine.
 
 | Area | What it looks for | Guide in `skills/security-sieve/` (`references/` unless named) |
 |---|---|---|
-| Injection | SQL, NoSQL, OS command, LDAP, template injection | `injection.md` |
-| Browser output | Reflected, stored and DOM XSS; CSRF | `xss.md`, `csrf.md` |
-| Access | Authorization, IDOR, privilege escalation; sessions, password storage | `authorization.md`, `authentication.md` |
-| Data | Weak crypto and randomness, secrets exposure, PII, deserialisation | `cryptography.md`, `data-protection.md`, `deserialization.md` |
-| Files and requests | Path traversal, uploads, XXE; SSRF | `file-security.md`, `ssrf.md` |
-| API and logic | Mass assignment, GraphQL, race conditions, workflow bypass | `api-security.md`, `business-logic.md` |
-| Configuration | Headers, CORS, debug mode, fail-open error handling, logging | `misconfiguration.md`, `error-handling.md`, `logging.md` |
-| Supply chain | Dependencies, build, unpinned third-party code | `supply-chain.md` |
-| Secrets | Keys in code and in git history, including deleted ones | scanners + `SKILL.md` |
-| AI agents | Tools with side effects, MCP servers and clients, skills, hooks, prompt injection | `agentic.md`, `modern-threats.md` |
-| Python | Django, Flask, FastAPI | `languages/python.md` |
-| JavaScript, TypeScript | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
-| PHP | Laravel, Symfony, plain PHP | `languages/php.md` |
-| C# | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
-| Java, Kotlin | Spring Boot, Spring Security, JPA/Hibernate, JDBC, MyBatis, Servlets | `languages/java.md` |
-| Containers | Dockerfile and runtime | `infrastructure/docker.md` |
-| Kubernetes, Helm | Pod security, RBAC, secrets, ingress, charts | `infrastructure/kubernetes.md` |
-| Terraform | IAM, ports and services open to the internet, state and secrets in HCL | `infrastructure/terraform.md` |
-| CI/CD | GitHub Actions, GitLab CI, Jenkins | `infrastructure/ci-cd.md` |
-| Cloud | IAM policies, secrets managers and Vault, service TLS | `infrastructure/cloud.md` |
-| Threat model | STRIDE, attack surface, CVE and dependency triage | `threat-modeling.md` |
+| **Injection** | SQL, NoSQL, OS command, LDAP, template injection | `injection.md` |
+| **Browser output** | Reflected, stored and DOM XSS; CSRF | `xss.md`, `csrf.md` |
+| **Access** | Authorization, IDOR, privilege escalation; sessions, password storage | `authorization.md`, `authentication.md` |
+| **Data** | Weak crypto and randomness, secrets exposure, PII, deserialisation | `cryptography.md`, `data-protection.md`, `deserialization.md` |
+| **Files and requests** | Path traversal, uploads, XXE; SSRF | `file-security.md`, `ssrf.md` |
+| **API and logic** | Mass assignment, GraphQL, race conditions, workflow bypass | `api-security.md`, `business-logic.md` |
+| **Configuration** | Headers, CORS, debug mode, fail-open error handling, logging | `misconfiguration.md`, `error-handling.md`, `logging.md` |
+| **Supply chain** | Dependencies, build, unpinned third-party code | `supply-chain.md` |
+| **Secrets** | Keys in code and in git history, including deleted ones | scanners + `SKILL.md` |
+| **AI agents** | Tools with side effects, MCP servers and clients, skills, hooks, prompt injection | `agentic.md`, `modern-threats.md` |
+| **Python** | Django, Flask, FastAPI | `languages/python.md` |
+| **JavaScript, TypeScript** | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
+| **PHP** | Laravel, Symfony, plain PHP | `languages/php.md` |
+| **C#** | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
+| **Java, Kotlin** | Spring Boot, Spring Security, JPA/Hibernate, JDBC, MyBatis, Servlets | `languages/java.md` |
+| **Containers** | Dockerfile and runtime | `infrastructure/docker.md` |
+| **Kubernetes, Helm** | Pod security, RBAC, secrets, ingress, charts | `infrastructure/kubernetes.md` |
+| **Terraform** | IAM, ports and services open to the internet, state and secrets in HCL | `infrastructure/terraform.md` |
+| **CI/CD** | GitHub Actions, GitLab CI, Jenkins | `infrastructure/ci-cd.md` |
+| **Cloud** | IAM policies, secrets managers and Vault, service TLS | `infrastructure/cloud.md` |
+| **Threat model** | STRIDE, attack surface, CVE and dependency triage | `threat-modeling.md` |
 
 Each finding has its file and line, CWE, OWASP Top 10:2025 category, exploit
 scenario, refutation score, fix and variants — the same pattern elsewhere in the

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.6 — 2026-10-11
+
+- README, "What it checks": the Area column is bold, so the eye finds the
+  area before the details. Documentation only.
+
 ## 1.10.5 — 2026-10-11
 
 - README: the heading of the WARNING block is one level smaller, the same size

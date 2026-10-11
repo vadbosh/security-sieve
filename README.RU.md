@@ -161,27 +161,27 @@ Windows:
 
 | Область | Что ищет | Гайд в `skills/security-sieve/` (`references/`, если каталог не указан) |
 |---|---|---|
-| Инъекции | SQL, NoSQL, команды ОС, LDAP, шаблоны | `injection.md` |
-| Вывод в браузер | Отражённый, хранимый и DOM XSS; CSRF | `xss.md`, `csrf.md` |
-| Доступ | Авторизация, IDOR, повышение привилегий; сессии, хранение паролей | `authorization.md`, `authentication.md` |
-| Данные | Слабая криптография и случайность, утечка секретов, персональные данные, десериализация | `cryptography.md`, `data-protection.md`, `deserialization.md` |
-| Файлы и запросы | Обход пути, загрузки, XXE; SSRF | `file-security.md`, `ssrf.md` |
-| API и логика | Массовое присваивание, GraphQL, гонки, обход шагов бизнес-процесса | `api-security.md`, `business-logic.md` |
-| Конфигурация | Заголовки, CORS, режим отладки, ошибки, после которых доступ открывается, журналирование | `misconfiguration.md`, `error-handling.md`, `logging.md` |
-| Цепочка поставок | Зависимости, сборка, сторонний код без пина | `supply-chain.md` |
-| Секреты | Ключи в коде и в истории git, включая удалённые | сканеры + `SKILL.md` |
-| ИИ-агенты | Инструменты с побочными эффектами, MCP-серверы и клиенты, скиллы, хуки, prompt injection | `agentic.md`, `modern-threats.md` |
-| Python | Django, Flask, FastAPI | `languages/python.md` |
-| JavaScript, TypeScript | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
-| PHP | Laravel, Symfony, чистый PHP | `languages/php.md` |
-| C# | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
-| Java, Kotlin | Spring Boot, Spring Security, JPA/Hibernate, JDBC, MyBatis, сервлеты | `languages/java.md` |
-| Контейнеры | Dockerfile и запуск | `infrastructure/docker.md` |
-| Kubernetes, Helm | Безопасность подов, RBAC, секреты, ingress, чарты | `infrastructure/kubernetes.md` |
-| Terraform | IAM, открытые наружу порты и сервисы, state и секреты в HCL | `infrastructure/terraform.md` |
-| CI/CD | GitHub Actions, GitLab CI, Jenkins | `infrastructure/ci-cd.md` |
-| Облако | Политики IAM, менеджеры секретов и Vault, TLS между сервисами | `infrastructure/cloud.md` |
-| Модель угроз | STRIDE, поверхность атаки, разбор CVE и зависимостей | `threat-modeling.md` |
+| **Инъекции** | SQL, NoSQL, команды ОС, LDAP, шаблоны | `injection.md` |
+| **Вывод в браузер** | Отражённый, хранимый и DOM XSS; CSRF | `xss.md`, `csrf.md` |
+| **Доступ** | Авторизация, IDOR, повышение привилегий; сессии, хранение паролей | `authorization.md`, `authentication.md` |
+| **Данные** | Слабая криптография и случайность, утечка секретов, персональные данные, десериализация | `cryptography.md`, `data-protection.md`, `deserialization.md` |
+| **Файлы и запросы** | Обход пути, загрузки, XXE; SSRF | `file-security.md`, `ssrf.md` |
+| **API и логика** | Массовое присваивание, GraphQL, гонки, обход шагов бизнес-процесса | `api-security.md`, `business-logic.md` |
+| **Конфигурация** | Заголовки, CORS, режим отладки, ошибки, после которых доступ открывается, журналирование | `misconfiguration.md`, `error-handling.md`, `logging.md` |
+| **Цепочка поставок** | Зависимости, сборка, сторонний код без пина | `supply-chain.md` |
+| **Секреты** | Ключи в коде и в истории git, включая удалённые | сканеры + `SKILL.md` |
+| **ИИ-агенты** | Инструменты с побочными эффектами, MCP-серверы и клиенты, скиллы, хуки, prompt injection | `agentic.md`, `modern-threats.md` |
+| **Python** | Django, Flask, FastAPI | `languages/python.md` |
+| **JavaScript, TypeScript** | Node, Express, React, Vue, Next.js | `languages/javascript.md` |
+| **PHP** | Laravel, Symfony, чистый PHP | `languages/php.md` |
+| **C#** | ASP.NET Core, ADO.NET, EF Core, Dapper | `languages/csharp.md` |
+| **Java, Kotlin** | Spring Boot, Spring Security, JPA/Hibernate, JDBC, MyBatis, сервлеты | `languages/java.md` |
+| **Контейнеры** | Dockerfile и запуск | `infrastructure/docker.md` |
+| **Kubernetes, Helm** | Безопасность подов, RBAC, секреты, ingress, чарты | `infrastructure/kubernetes.md` |
+| **Terraform** | IAM, открытые наружу порты и сервисы, state и секреты в HCL | `infrastructure/terraform.md` |
+| **CI/CD** | GitHub Actions, GitLab CI, Jenkins | `infrastructure/ci-cd.md` |
+| **Облако** | Политики IAM, менеджеры секретов и Vault, TLS между сервисами | `infrastructure/cloud.md` |
+| **Модель угроз** | STRIDE, поверхность атаки, разбор CVE и зависимостей | `threat-modeling.md` |
 
 У каждой находки есть файл и строка, CWE, категория OWASP Top 10:2025, сценарий
 атаки, оценка опровержения, исправление и варианты — тот же паттерн в других
