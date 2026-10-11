@@ -25,7 +25,7 @@
 > sent to a client. What the report does not mention is not checked.
 
 > [!WARNING]
-> ## 🟠 THE MODEL CAN CHANGE HALFWAY THROUGH A REVIEW
+> ### 🟠 THE MODEL CAN CHANGE HALFWAY THROUGH A REVIEW
 >
 > Opus 5.5's safeguards may flag a review as cybersecurity work. The rest of
 > the session is then answered by Opus 4.8, a weaker model, while the chat

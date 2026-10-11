@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.5 — 2026-10-11
+
+- README: the heading of the WARNING block is one level smaller, the same size
+  as the CAUTION heading. Documentation only.
+
 ## 1.10.4 — 2026-10-11
 
 - README: the heading of the CAUTION block is one level smaller. Documentation
