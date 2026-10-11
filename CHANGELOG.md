@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.10.1 — 2026-10-11
+
+- The fallback check counted the word, not the event. 1.10.0 told the review
+  to run `rg -c model_refusal_fallback` on the transcript, which also counts
+  every message that mentions the fallback: on the session that introduced the
+  check it read 24 where one event had fired, so any review that discusses the
+  fallback would raise a false alarm. The command now matches the event field,
+  `"subtype":"model_refusal_fallback"`.
+
 ## 1.10.0 — 2026-10-11
 
 - **The model is pinned down by its exact id, and a mid-run fallback is

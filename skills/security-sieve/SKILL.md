@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.10.0"
+version: "1.10.1"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -93,8 +93,11 @@ one partway. Do not trust the name in the flow.
 
 Check the session transcript (`~/.claude/projects/<cwd-slug>/<session-id>.jsonl`)
 for it: `rg -o '"model":"claude-[^"]*"' "<file>" | sort -u` lists the distinct
-ids, and `rg -c model_refusal_fallback "<file>"` shows whether a fallback
-fired. More than one id means part of the work ran on each; the report's Model
+ids, and `rg -c '"subtype":"model_refusal_fallback"' "<file>"` shows whether
+a fallback fired. Match the field, not the bare word: a session that talks
+about the fallback mentions it in its own messages, and a bare-word count read
+24 where one event had fired. More than one id means part of the work ran on
+each; the report's Model
 field says so and names which id the findings and the refuters actually ran
 on. The operator can edit the flagged turn and retry on Opus 5.5, or accept
 the weaker model — either way the report records the fallback. Cannot read the
