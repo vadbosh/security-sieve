@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.5 — 2026-10-11
+
+- README, dependency table: the note that `osv-scanner` downloads its
+  database (about 200 MB per ecosystem, again when it changes) moved to the
+  "Without it" column. The skill itself is unchanged.
+
 ## 1.8.4 — 2026-10-11
 
 - **`osv-scanner` runs offline.** Online, it sends every package name and
