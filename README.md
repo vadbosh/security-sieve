@@ -3,7 +3,7 @@
 > [!CAUTION]
 > ## ⚠️ THE MODEL DECIDES WHAT THIS REVIEW FINDS
 >
-> **The same skill on the same code finds different vulnerabilities on
+> 🔴 **The same skill on the same code finds different vulnerabilities on
 > different models.** One multi-tenant API with 7 confirmed vulnerabilities,
 > reviewed whole:
 >
@@ -13,27 +13,29 @@
 > | GPT-6 | 5 of 7 — not the same 5 |
 > | GPT-5, GPT-5.6 | 2–3 of 7; every bug where one customer reads or changes another's data was missed |
 >
-> **Run it on the strongest model you have, and at its highest reasoning
+> 🔴 **Run it on the strongest model you have, and at its highest reasoning
 > level.** For anything that matters, run it on two different strong models
 > and merge the reports. An empty report from a weaker model does not mean
 > the code is safe. The skill names its model when it starts, and the report
 > names it too.
 >
-> **The model can change halfway through a review.** Opus 5.5's safeguards
-> may flag a review as cybersecurity work. The rest of the session is then
-> answered by Opus 4.8, a weaker model, while the chat still says "Opus".
-> From then on, the checks of the findings run on the weaker model too. The
-> skill reads the session log and says
-> so in the first line of the review and in the report. When it does, switch
-> back with `/model` and run the review again.
->
-> **The report is an ASSESSMENT, not a final verdict.** It is a model's
+> 🔴 **The report is an ASSESSMENT, not a final verdict.** It is a model's
 > estimate of what is exploitable. A person must check every finding against
 > the code and the deployment before anything is fixed, rotated, published or
 > sent to a client. What the report does not mention is not checked.
 
+> [!WARNING]
+> ## 🟠 THE MODEL CAN CHANGE HALFWAY THROUGH A REVIEW
+>
+> Opus 5.5's safeguards may flag a review as cybersecurity work. The rest of
+> the session is then answered by Opus 4.8, a weaker model, while the chat
+> still says "Opus". From then on, the checks of the findings run on the
+> weaker model too. The skill reads the session log and says so in the first
+> line of the review and in the report. When it does, switch back with
+> `/model` and run the review again.
+
 > [!NOTE]
-> **A large repository costs time and money, and a single pass does not read
+> 🔵 **A large repository costs time and money, and a single pass does not read
 > all of it.** On Claude Opus, 144 C# files took 8 minutes; 3888 Java files
 > took 27 minutes and USD 42, and the search looked at about one file in
 > nine, chosen by the model. Above 500 source files the skill says this
@@ -113,7 +115,7 @@ see the dependency table. The skill runs what is installed, installs nothing,
 and the report says what ran.
 
 > [!IMPORTANT]
-> **Install `trufflehog`, `gitleaks` and `jq`.** Only `trufflehog` and `gitleaks`
+> 🟣 **Install `trufflehog`, `gitleaks` and `jq`.** Only `trufflehog` and `gitleaks`
 > let the review see git history: a key deleted three commits ago is still in
 > every clone. Without them the report says "Secrets in git history: NOT scanned".
 > `jq` keeps secret values out of the model's view; without it `trufflehog`,
@@ -128,7 +130,7 @@ and the report says what ran.
 > [jq](https://jqlang.org/download/).
 
 > [!NOTE]
-> **Windows.** The scanners exist for Windows:
+> 🔵 **Windows.** The scanners exist for Windows:
 > - [trufflehog](https://github.com/trufflesecurity/trufflehog/releases): `windows_amd64` and `windows_arm64` archives on its releases page;
 > - [gitleaks](https://github.com/gitleaks/gitleaks/releases): `winget install --id Gitleaks.Gitleaks`;
 > - [checkov](https://github.com/bridgecrewio/checkov): `pip install checkov`;

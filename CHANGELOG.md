@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.10.3 — 2026-10-11
+
+- README: the paragraph on the model changing halfway through a review moved
+  out of the CAUTION block into a WARNING block of its own, with a heading,
+  so it is read as a warning rather than found inside a long one. The lead
+  sentence of every CAUTION, IMPORTANT and NOTE block now carries a coloured
+  marker (🔴, 🟣, 🔵) matching the block's colour on GitHub. GitHub strips
+  inline colour from HTML, and an emoji keeps its colour in both the light
+  and the dark theme while the text stays selectable. Documentation only.
+
 ## 1.10.2 — 2026-10-11
 
 - **The history scan works on a directory below the repository root.** A
