@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.4 — 2026-10-11
+
+- **`osv-scanner` runs offline.** Online, it sends every package name and
+  version from the lockfiles to `api.osv.dev`, together with the machine's
+  address. `scan.sh` now passes `--offline-vulnerabilities
+  --download-offline-databases`: the first run downloads each ecosystem's
+  database into the user cache directory (`~/.cache/osv-scalibr` on Linux,
+  `~/Library/Caches/osv-scalibr` on macOS), and the comparison happens
+  locally. Every run checks the archive's checksum against the server and
+  downloads it again when it has changed.
+  Measured on a Vue project with 1444 npm packages: the same 135 vulnerable
+  packages as online, no difference in the list. The cost is
+  disk space and time: 209 MB for npm, and about 41 s per run instead of 4 s.
+
 ## 1.8.3 — 2026-10-10
 
 - Documentation wording: the paragraphs added in 1.8.2 read through for

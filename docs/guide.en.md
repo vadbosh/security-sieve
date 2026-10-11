@@ -143,6 +143,13 @@ Network use:
 
 - `semgrep` downloads its rules from the Semgrep registry; without network
   access the skill goes on without it;
+- `osv-scanner` compares versions against a local database. On the first run
+  it downloads the database of each ecosystem it finds, about 200 MB for npm,
+  into the user cache directory: `~/.cache/osv-scalibr` on Linux,
+  `~/Library/Caches/osv-scalibr` on macOS. Every later run compares the
+  archive's checksum with the server's and downloads it again when the
+  database has changed — often, since OSV is updated many times a day.
+  Package names and versions stay on the machine.
 - `trufflehog` runs with `--no-verification`. Verification would send every
   key it finds to the provider, so the skill asks before turning it on.
 - `trufflehog` also runs with `--no-update`. Without it, it first tries to

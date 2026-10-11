@@ -140,7 +140,7 @@ and the report says what ran.
 | [`trufflehog`](https://github.com/trufflesecurity/trufflehog) | strongly recommended | secrets in every commit and in files not committed yet | If `gitleaks` is missing too, a secret is found only when it is in a file the model reads |
 | [`gitleaks`](https://github.com/gitleaks/gitleaks) | strongly recommended | the same, with other rules; values masked by `--redact` | If `trufflehog` is missing too, a secret is found only when it is in a file the model reads. Either one alone covers git history |
 | [`semgrep`](https://semgrep.dev/docs/getting-started/) | optional | code patterns in many languages. Downloads its rules from the Semgrep registry | The model follows the code from the entry points; on a large tree it may miss a sink far from them |
-| [`osv-scanner`](https://google.github.io/osv-scanner/) | optional | known-vulnerable dependency versions from lockfiles | No dependency CVE list in threat-model mode. Code mode reports a CVE only when the vulnerable call is reachable anyway |
+| [`osv-scanner`](https://google.github.io/osv-scanner/) | optional | known-vulnerable dependency versions from lockfiles. Runs offline: on the first run it downloads its database, about 200 MB per ecosystem | No dependency CVE list in threat-model mode. Code mode reports a CVE only when the vulnerable call is reachable anyway |
 | [`trivy`](https://trivy.dev/) | optional | dependencies and IaC misconfiguration | Dependencies are left to `osv-scanner`, IaC to `checkov` |
 | [`checkov`](https://www.checkov.io/) | optional | policy checks for Terraform, Kubernetes, Dockerfiles, CI | Terraform and Kubernetes are reviewed from the guides alone |
 

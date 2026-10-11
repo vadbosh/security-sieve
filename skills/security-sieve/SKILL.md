@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.8.3"
+version: "1.8.4"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -474,8 +474,13 @@ to reading the current files. When neither is installed, say so in the report
 summary — "Secrets in git history: NOT scanned" — and recommend installing
 them; never let an empty secrets section read as "no secrets".
 
-Two of these talk to the network. `semgrep` downloads its registry rules.
-`trufflehog` without `--no-verification` sends every key it finds to the
+Three of these talk to the network. `semgrep` downloads its registry rules.
+`osv-scanner` runs offline against a database it downloads — about 200 MB
+per ecosystem the first time, into the user cache directory (`~/.cache/osv-scalibr` on Linux,
+`~/Library/Caches/osv-scalibr` on macOS), checked against the server's
+checksum on every run and downloaded again when it changed — so no package
+name or version leaves the machine; say so when the user asks why the first
+run is slow. `trufflehog` without `--no-verification` sends every key it finds to the
 provider's API to test it — ask the user before turning verification on.
 
 **A web search sends its query outside the machine**, in every step, and a

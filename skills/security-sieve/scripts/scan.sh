@@ -84,8 +84,13 @@ elif have semgrep; then
     echo "skip semgrep: jq not installed, its output quotes source lines"
     skipped="$skipped semgrep"
 fi
+# Offline: the online mode sends every package name and version to
+# api.osv.dev. This one downloads the ecosystem's whole database instead
+# (~200 MB for npm, into the user cache dir: ~/.cache/osv-scalibr on Linux,
+# ~/Library/Caches/osv-scalibr on macOS) and compares locally; on a
+# 1444-package lockfile both gave the same 135 vulnerable packages.
 have osv-scanner && run osv-scanner "$out/osv.log" \
-    sh -c 'exec osv-scanner scan source -r --format json . > "$1"' _ "$out/osv.json"
+    sh -c 'exec osv-scanner scan source -r --offline-vulnerabilities --download-offline-databases --format json . > "$1"' _ "$out/osv.json"
 if have trivy && have jq; then
     run trivy "$out/trivy.log" \
         trivy fs --scanners vuln,misconfig --format json --output "$out/trivy.json" .
