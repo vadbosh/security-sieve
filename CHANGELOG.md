@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.2 — 2026-10-11
+
+- README dependency table, scanner rows rewritten to carry meaning. The
+  `osv-scanner` row now puts the download cost and its reason (the local
+  database keeps package names and versions off `api.osv.dev`) in the "Adds"
+  column and, tied to the scan modes, says what the report loses without it;
+  the old text had a dangling "With it" / "С ним" with no referent. The
+  `semgrep`, `trivy` and `checkov` rows now say what each contributes to a
+  scan — a hit is a candidate the review refutes, not a verdict — and what is
+  lost when it is absent. Documentation only.
+
 ## 1.9.1 — 2026-10-11
 
 - **A candidate dropped without a refuter is named in the report.** The
