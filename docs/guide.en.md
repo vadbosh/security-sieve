@@ -217,6 +217,11 @@ variants — the same pattern elsewhere in the repository. The summary names
 the model that ran the review, lists the tools that ran, and says whether git
 history and uncommitted files were scanned for secrets.
 
+The review ends with a short block in the chat, framed like the scanner
+summary. It names the target, the report path and the posture score, then
+gives a line per finding and per open question, then secrets and tools. It is the last thing in
+the reply; when it appears, the review is over.
+
 A narrowed scope or a review in parts adds three things to the report:
 
 - a **Coverage** line in the summary;

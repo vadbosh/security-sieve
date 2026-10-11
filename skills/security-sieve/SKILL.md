@@ -1,7 +1,7 @@
 ---
 name: security-sieve
 description: Security review that reports only exploitable findings — every candidate goes through a separate refutation pass before it is reported. Covers code, a diff or a branch, threat models and CVE triage, infrastructure (Docker, Kubernetes and Helm, Terraform, CI/CD pipelines, cloud IAM) and code that drives AI agents (tools, MCP servers, skills, hooks). Use when asked to "security review", "find vulnerabilities", "audit security", "review this branch/PR for security", "threat model", "is this CVE exploitable", "audit IAM", "review this MCP server".
-version: "1.8.5"
+version: "1.9.0"
 allowed-tools: Read Grep Glob Bash Agent
 license: LICENSE
 ---
@@ -640,14 +640,49 @@ a different framework path) goes through Step 5 like any candidate.
 ### 7. Report
 
 Use the output format below, in the format, language and place chosen in
-Step 0. In diff mode, list "Outside the diff" last. Then show the user the
-summary block in the chat and the path of the file.
+Step 0. In diff mode, list "Outside the diff" last.
 
 Then delete the scratch directory from Step 3: `rm -r -- "<out>"`, with the
 path written out. It holds scanner output with secret paths and commits,
 and in `trufflehog`'s case the values. If the assistant's own rules require
 a confirmation for `rm`, ask for it once, naming the path; if the deletion
 is refused or fails, give the user the path and the command.
+
+**End the review with this block, the last thing in the reply**, in a
+`diff` code block, the same frame as the scanner summary in Step 3.
+Measured: a review whose last reply also answered questions about a tool and
+reported a release gave its result in two sentences mid-reply, and the user
+waited for a report that had already been written. The block is how the user
+knows the review is over.
+
+```diff
+━━━━━━━━━━━━ security-sieve: review done ━━━━━━━━━━━━
+  target   <repository or path>  (<branch>, <short commit>, <N> files)
+  report   <path of the report file, or "chat only">
+  model    <the session's model>, refuters <the same / which>
+  posture  <N>/10
+- High     VULN-001  <class, one line> (<file:line>)
+- Medium   VULN-002  <class, one line> (<file:line>)
+  verify   VERIFY-001  <one line> (<file:line>)
++ secrets  <history and working tree: none / N found — or "NOT scanned">
++ tools    <tools that ran>
+- missing  <tools not installed or failed>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+- One line per finding, `-` and its severity first, most severe first;
+  one line per "Needs verification" item, without a sign. No findings:
+  `+ findings none`.
+- `secrets` is `+` when the scanners ran and found nothing, `-` when they
+  found something or did not run.
+- Field names stay in English like the scanner summary; the one-line
+  descriptions follow the report's language.
+- Nothing of the review after it. Anything else the reply has to say — an
+  answer to a question asked during the review, another task — goes above
+  the block. The one exception is a section the assistant's own rules
+  require to be last (a list of defects noticed along the way, for one):
+  it follows the block. In a run nobody answers, the block is still the
+  last text of the review.
 
 ---
 

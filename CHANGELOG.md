@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.0 — 2026-10-11
+
+- **The review ends with a fixed block.** Step 7 said "show the summary
+  block in the chat", and the model did it in its own words. In one review
+  the last reply also answered questions about `osv-scanner` and reported a
+  release; the result came as two sentences in the middle, and the user kept
+  waiting for a report that was already written. The review now ends with a
+  framed `diff` block, the same shape as the scanner summary: target, report
+  path, model, posture score, one line per finding and per "Needs
+  verification" item, secrets, tools. Nothing comes after it.
+
 ## 1.8.5 — 2026-10-11
 
 - README, dependency table: the note that `osv-scanner` downloads its
