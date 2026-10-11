@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.10.7 — 2026-10-11
+
+- README, the WARNING on the model changing mid-review: it now says the
+  switch is made by the model provider on the fly, and that neither the
+  skill nor the reader can prevent it — only notice it and switch back. It
+  also says the check is Claude Code's: in Codex and Opencode the skill
+  names the model the host reports, and a switch cannot be detected there.
+  Documentation only.
+
 ## 1.10.6 — 2026-10-11
 
 - README, "What it checks": the Area column is bold, so the eye finds the

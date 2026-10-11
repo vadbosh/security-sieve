@@ -27,12 +27,16 @@
 > [!WARNING]
 > ### 🟠 THE MODEL CAN CHANGE HALFWAY THROUGH A REVIEW
 >
-> Opus 5.5's safeguards may flag a review as cybersecurity work. The rest of
-> the session is then answered by Opus 4.8, a weaker model, while the chat
-> still says "Opus". From then on, the checks of the findings run on the
+> Opus 5.5's safeguards may flag a review as cybersecurity work. The model
+> provider (Anthropic) then switches the session to Opus 4.8, a weaker model,
+> on the fly, while the chat still says "Opus". This is the provider's
+> decision: neither the skill nor you can prevent it, only notice it and
+> switch back. From then on, the checks of the findings run on the
 > weaker model too. The skill reads the session log and says so in the first
 > line of the review and in the report. When it does, switch back with
-> `/model` and run the review again.
+> `/model` and run the review again. This check works in Claude Code only.
+> In Codex and Opencode the skill names the model the host reports, and it
+> cannot detect a switch in the middle of a review.
 
 > [!NOTE]
 > 🔵 **A large repository costs time and money, and a single pass does not read
