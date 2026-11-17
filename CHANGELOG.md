@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.9 — 2026-11-17
+
+- `.gitignore` carries the canonical ai-gitignore block (AI-assistant
+  artifacts and developer noise). The skill itself does not change.
+
 ## 1.10.8 — 2026-10-11
 
 - 1.10.7 said a model switch cannot be detected in Codex. That was wrong.
